@@ -3,371 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V6 (DeltaG & Precise Codons)</title>
+    <title>Molecular Workbench V8 (Hairpin DeltaG)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #0f172a; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #1e293b; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
-        
-        /* Interactive Inputs */
-        textarea:focus { box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2); border-color: #2563eb; }
-        
-        /* DNA Colors */
-        .base-A { color: #15803d; font-weight: bold; }
-        .base-T { color: #b91c1c; font-weight: bold; }
-        .base-G { color: #d97706; font-weight: bold; }
-        .base-C { color: #1d4ed8; font-weight: bold; }
-        
-        /* Protein Box */
-        .residue-box {
-            display: flex; flex-direction: column; align-items: center; 
-            width: 22px; margin: 1px; cursor: pointer; user-select: none;
+
+        /* --- SMART INPUT SYSTEM --- */
+        .smart-input-container {
+            position: relative; width: 100%; height: 120px;
+            border: 1px solid #cbd5e1; border-radius: 8px; background: white; overflow: hidden;
         }
-        .residue-char {
-            font-size: 0.9rem; font-weight: 700; width: 100%; text-align: center;
-            border-radius: 4px; color: #334155; background: #e2e8f0; transition: transform 0.1s;
+        .smart-input-container:focus-within {
+            border-color: #3b82f6; ring: 2px; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
         }
-        .residue-char:hover { transform: scale(1.15); z-index: 10; background: #cbd5e1; }
-        .residue-char.masked { background-color: #475569; color: #fbbf24; text-decoration: line-through; opacity: 0.9; }
+        .smart-backdrop, .smart-textarea {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
+            padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.5;
+            white-space: pre-wrap; word-wrap: break-word; overflow: auto; margin: 0; border: none; outline: none; resize: none;
+        }
+        .smart-backdrop { z-index: 1; color: transparent; pointer-events: none; background: transparent; }
+        .smart-textarea { z-index: 2; color: transparent; background: transparent; caret-color: black; }
+        
+        .c-A { color: #16a34a; font-weight: bold; }
+        .c-T { color: #dc2626; font-weight: bold; }
+        .c-G { color: #d97706; font-weight: bold; }
+        .c-C { color: #2563eb; font-weight: bold; }
+        .c-X { color: #cbd5e1; }
+
+        /* Other Styles */
+        .residue-box { width: 22px; margin: 1px; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
+        .residue-char { font-size: 0.9rem; font-weight: 700; width: 100%; text-align: center; border-radius: 4px; background: #e2e8f0; color: #334155; }
+        .residue-char.masked { background-color: #475569; color: #fbbf24; text-decoration: line-through; opacity: 0.8; }
         .residue-num { font-size: 0.55rem; color: #94a3b8; margin-top: 2px; }
-
-        /* Rare Codon Styling */
-        .codon-rare {
-            background-color: #fee2e2; color: #991b1b; font-weight: bold;
-            border-bottom: 2px solid #ef4444; cursor: help; padding: 0 2px;
-        }
-        .codon-ok { color: #cbd5e1; }
-
-        /* Badge Utilities */
-        .badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 600; }
-        .bg-good { background: #dcfce7; color: #166534; }
-        .bg-bad { background: #fee2e2; color: #991b1b; }
-        
-        /* Animations */
-        .fade-in { animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        .codon-rare { background-color: #fee2e2; color: #991b1b; font-weight: bold; border-bottom: 2px solid #ef4444; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
 
-    <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-6 border-b border-slate-200 pb-6">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-slate-200 pb-4">
         <div>
-            <h1 class="text-3xl font-bold text-slate-900 tracking-tight flex items-center gap-3">
-                🧬 Molecular Workbench <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded shadow-sm">v6.0</span>
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                🧬 Molecular Workbench <span class="text-xs bg-pink-600 text-white px-2 py-1 rounded">v8.0</span>
             </h1>
-            <p class="text-slate-500 text-sm mt-1">Nearest-Neighbor ΔG • Relative Adaptiveness Codon Check</p>
+            <p class="text-slate-500 text-sm">Hairpin Analysis • Color Input • CSV Export</p>
         </div>
-        
-        <nav class="bg-white p-1 rounded-lg border border-slate-200 shadow-sm flex">
-            <button onclick="switchTab('primer')" id="tab-primer" class="px-6 py-2 text-sm font-semibold rounded-md bg-blue-50 text-blue-700 transition">Primer ΔG</button>
-            <button onclick="switchTab('protein')" id="tab-protein" class="px-6 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition">Masking</button>
-            <button onclick="switchTab('codon')" id="tab-codon" class="px-6 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition">Rare Codon</button>
+        <nav class="bg-white p-1 rounded-lg border border-slate-200 shadow-sm flex gap-1">
+            <button onclick="switchTab('primer')" id="tab-primer" class="px-5 py-2 text-sm font-semibold rounded bg-pink-50 text-pink-700">Primer (Hairpin)</button>
+            <button onclick="switchTab('protein')" id="tab-protein" class="px-5 py-2 text-sm font-medium rounded text-slate-500 hover:text-slate-700">Masking</button>
+            <button onclick="switchTab('codon')" id="tab-codon" class="px-5 py-2 text-sm font-medium rounded text-slate-500 hover:text-slate-700">Rare Codon</button>
         </nav>
     </header>
 
-    <main id="content-primer" class="tool-content fade-in">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-            <h2 class="text-xl font-bold text-slate-800 mb-2 flex items-center gap-2">⚡ Primer Thermodynamics</h2>
-            <p class="text-xs text-slate-500 mb-6">Calculates ΔG using Nearest-Neighbor method at 37°C. (Target ΔG for annealing: -15 to -22 kcal/mol is typical)</p>
-
-            <div class="grid md:grid-cols-2 gap-8 mb-6">
-                <div class="space-y-2">
-                    <label class="font-bold text-sm text-slate-700 flex justify-between">FWD Primer <span id="fwd-stats" class="text-xs font-normal text-slate-400">-</span></label>
-                    <textarea id="fwdInput" class="w-full h-28 p-3 font-mono text-sm border border-slate-300 rounded-lg outline-none bg-slate-50 focus:bg-white transition"
-                        placeholder="Paste Forward Sequence..." onmouseup="analyzePrimer('fwd')" onkeyup="analyzePrimer('fwd')" oninput="cleanInput(this)"></textarea>
-                    <div id="fwdPreview" class="h-8 text-xs flex items-center text-slate-400 italic">Select annealing part...</div>
+    <main id="content-primer" class="tool-content">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            
+            <div class="grid md:grid-cols-2 gap-6 mb-6">
+                <div>
+                    <label class="block text-sm font-bold text-slate-700 mb-2">Forward Primer</label>
+                    <div class="smart-input-container">
+                        <div id="fwdBackdrop" class="smart-backdrop"></div>
+                        <textarea id="fwdInput" class="smart-textarea" spellcheck="false" placeholder="Paste Sequence..." oninput="handleInput('fwd')" onscroll="syncScroll('fwd')" onmouseup="checkSelect('fwd')" onkeyup="checkSelect('fwd')"></textarea>
+                    </div>
+                    <div id="fwdPreview" class="text-xs text-slate-400 mt-1 h-5 flex items-center">Highlight annealing part...</div>
                 </div>
 
-                <div class="space-y-2">
-                    <div class="flex justify-between">
-                        <label class="font-bold text-sm text-slate-700">REV Primer <span id="rev-stats" class="text-xs font-normal text-slate-400">-</span></label>
-                        <button onclick="revCompTool()" class="text-[10px] bg-slate-100 px-2 py-0.5 rounded border border-slate-200 hover:bg-blue-50 hover:text-blue-600 transition">↺ RevComp Tool</button>
+                <div>
+                    <div class="flex justify-between mb-2">
+                        <label class="block text-sm font-bold text-slate-700">Reverse Primer</label>
+                        <button onclick="revCompTool()" class="text-[10px] bg-slate-100 px-2 rounded border hover:bg-pink-50 hover:text-pink-600">↺ RevComp</button>
                     </div>
-                    <textarea id="revInput" class="w-full h-28 p-3 font-mono text-sm border border-slate-300 rounded-lg outline-none bg-slate-50 focus:bg-white transition"
-                        placeholder="Paste Reverse Sequence..." onmouseup="analyzePrimer('rev')" onkeyup="analyzePrimer('rev')" oninput="cleanInput(this)"></textarea>
-                    <div id="revPreview" class="h-8 text-xs flex items-center text-slate-400 italic">Select annealing part...</div>
+                    <div class="smart-input-container">
+                        <div id="revBackdrop" class="smart-backdrop"></div>
+                        <textarea id="revInput" class="smart-textarea" spellcheck="false" placeholder="Paste Sequence..." oninput="handleInput('rev')" onscroll="syncScroll('rev')" onmouseup="checkSelect('rev')" onkeyup="checkSelect('rev')"></textarea>
+                    </div>
+                    <div id="revPreview" class="text-xs text-slate-400 mt-1 h-5 flex items-center">Highlight annealing part...</div>
                 </div>
             </div>
 
-            <button onclick="addPair()" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg shadow-md transition mb-8 flex justify-center gap-2">
-                + Add Primer Pair to Table
-            </button>
+            <div class="flex flex-col md:flex-row gap-4 items-end justify-between bg-slate-50 p-4 rounded-lg border border-slate-200 mb-6">
+                <div class="w-full md:w-1/3">
+                    <label class="text-xs font-bold text-slate-500 uppercase">Primer Pair Name</label>
+                    <input type="text" id="primerName" class="w-full p-2 border border-slate-300 rounded text-sm focus:border-pink-500 outline-none" placeholder="e.g. geneA_cloning">
+                </div>
+                <button onclick="addPair()" class="w-full md:w-auto px-6 py-2 bg-pink-600 hover:bg-pink-700 text-white font-bold rounded shadow transition">
+                    + Add to Table
+                </button>
+            </div>
 
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-sm font-bold text-slate-700">Order List</h3>
+                <button onclick="exportCSV()" class="text-xs flex items-center gap-1 bg-green-600 text-white px-3 py-1.5 rounded hover:bg-green-700 transition shadow-sm">
+                    📄 Export CSV
+                </button>
+            </div>
+            
             <div class="overflow-x-auto border border-slate-200 rounded-lg">
                 <table class="w-full text-left text-sm">
-                    <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200">
+                    <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase">
                         <tr>
-                            <th class="px-4 py-3">Pair</th>
-                            <th class="px-4 py-3">Sequence Analysis</th>
-                            <th class="px-4 py-3 w-32">Thermodynamics</th>
-                            <th class="px-4 py-3 w-32 text-center bg-blue-50/50">Rec. Ta</th>
+                            <th class="px-4 py-3">Name</th>
+                            <th class="px-4 py-3">Type</th>
+                            <th class="px-4 py-3">Sequence</th>
+                            <th class="px-4 py-3 w-16">Len</th>
+                            <th class="px-4 py-3 w-16">Tm</th>
+                            <th class="px-4 py-3 w-24 bg-pink-50/50">Hp ΔG</th>
                             <th class="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
-                    <tbody id="primerTable" class="bg-white divide-y divide-slate-100"></tbody>
+                    <tbody id="primerTable" class="bg-white divide-y divide-slate-100 font-mono text-xs text-slate-600">
+                        </tbody>
                 </table>
+                <div id="emptyMsg" class="p-6 text-center text-slate-400 italic text-sm">No primers added yet.</div>
             </div>
         </div>
     </main>
 
     <main id="content-protein" class="tool-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-            <h2 class="text-xl font-bold text-slate-800 mb-6">🎭 Protein Masking Workspace</h2>
-            <div class="flex gap-4 mb-6">
-                <input id="protSeq" type="text" class="flex-1 p-3 border border-slate-300 rounded-lg font-mono text-sm outline-none focus:border-blue-500" placeholder="Paste Protein Seq..." oninput="cleanInput(this)">
-                <button onclick="addMaskWorkspace()" class="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-lg shadow transition">+ New Box</button>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-4">🎭 Protein Masking</h2>
+            <div class="flex gap-3 mb-6">
+                <input id="protSeq" type="text" class="flex-1 p-3 border border-slate-300 rounded text-sm font-mono uppercase" placeholder="Paste Amino Acid Sequence..." oninput="this.value=this.value.replace(/[^a-zA-Z]/g,'').toUpperCase()">
+                <button onclick="addWorkspace()" class="px-5 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900">+ New Box</button>
             </div>
             <div id="maskContainer" class="space-y-6"></div>
         </div>
     </main>
 
     <main id="content-codon" class="tool-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 md:p-8">
-            <div class="flex justify-between items-start mb-4">
-                <div>
-                    <h2 class="text-xl font-bold text-slate-800 flex items-center gap-2">🦠 Precise Rare Codon <span class="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded">E. coli K-12</span></h2>
-                    <p class="text-xs text-slate-500 mt-1">Method: <strong>Codon Adaptation Index (Relative Adaptiveness)</strong>. Threshold: < 10% of best codon.</p>
-                </div>
-            </div>
-            
-            <textarea id="codonInput" class="w-full p-4 border border-slate-200 rounded-lg font-mono text-sm outline-none focus:border-red-400 focus:ring-4 focus:ring-red-50 mb-6 transition" rows="3" placeholder="Paste Coding Sequence (ATG...)" oninput="cleanInput(this); runCodonAnalysis()"></textarea>
-
-            <div class="grid md:grid-cols-3 gap-6">
-                <div class="md:col-span-2">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Gene Map</h3>
-                    <div id="codonVisual" class="p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm break-all leading-loose min-h-[150px] text-slate-400">
-                        Result map...
-                    </div>
-                </div>
-                <div class="md:col-span-1">
-                    <h3 class="text-xs font-bold text-slate-400 uppercase mb-2">Rare List</h3>
-                    <div id="codonList" class="p-2 bg-white border border-slate-200 rounded-lg h-[250px] overflow-y-auto text-sm shadow-inner">
-                        <div class="text-center text-slate-300 text-xs mt-10">Waiting...</div>
-                    </div>
-                </div>
-            </div>
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">🦠 Rare Codon (Relative)</h2>
+            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm mb-4 h-24" placeholder="Paste DNA..." oninput="analyzeCodons()"></textarea>
+            <div id="codonVisual" class="p-4 bg-slate-50 border border-slate-200 rounded font-mono text-sm break-all leading-loose text-slate-400 min-h-[100px]">Result map...</div>
         </div>
     </main>
 
     <script>
-        // --- UTILS ---
-        function cleanInput(el) { el.value = el.value.replace(/[^a-zA-Z]/g, ''); }
-        function switchTab(t) {
-            document.querySelectorAll('.tool-content').forEach(e => e.classList.add('hidden'));
-            document.getElementById('content-'+t).classList.remove('hidden');
-            document.querySelectorAll('nav button').forEach(b => b.className = "px-6 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 transition");
-            document.getElementById('tab-'+t).className = "px-6 py-2 text-sm font-semibold rounded-md bg-blue-50 text-blue-700 shadow-sm transition";
+        // --- GLOBAL STATE ---
+        let primerList = [];
+
+        // --- 1. SMART INPUT SYSTEM ---
+        function handleInput(id) {
+            const input = document.getElementById(id+'Input');
+            const backdrop = document.getElementById(id+'Backdrop');
+            const val = input.value;
+            const colored = val.replace(/./g, (char) => {
+                const c = char.toUpperCase();
+                if(c === 'A') return '<span class="c-A">A</span>';
+                if(c === 'T') return '<span class="c-T">T</span>';
+                if(c === 'G') return '<span class="c-G">G</span>';
+                if(c === 'C') return '<span class="c-C">C</span>';
+                if(/\s/.test(char)) return char; 
+                return `<span class="c-X">${char}</span>`;
+            });
+            backdrop.innerHTML = colored + '<br>';
         }
-        function revCompTool() {
-            const el = document.getElementById('revInput');
-            if(!el.value) return;
-            const rc = el.value.split('').reverse().join('').replace(/[ATGCatgc]/g, b => ({'A':'T','T':'A','G':'C','C':'G','a':'t','t':'a','g':'c','c':'g'}[b]||b));
-            el.value = rc.toUpperCase();
-            analyzePrimer('rev');
+        function syncScroll(id) {
+            const input = document.getElementById(id+'Input');
+            document.getElementById(id+'Backdrop').scrollTop = input.scrollTop;
+            document.getElementById(id+'Backdrop').scrollLeft = input.scrollLeft;
         }
 
-        // --- 1. PRIMER ENGINE (Nearest Neighbor) ---
-        // SantaLucia 1998 Unified NN Parameters (dH, dS)
-        const nnParams = {
-            'AA':[-7.9,-22.2], 'TT':[-7.9,-22.2], 'AT':[-7.2,-20.4], 'TA':[-7.2,-21.3],
-            'CA':[-8.5,-22.7], 'TG':[-8.5,-22.7], 'GT':[-8.4,-22.4], 'AC':[-8.4,-22.4],
-            'CT':[-7.8,-21.0], 'AG':[-7.8,-21.0], 'GA':[-8.2,-22.2], 'TC':[-8.2,-22.2],
-            'CG':[-10.6,-27.2], 'GC':[-9.8,-24.4], 'GG':[-8.0,-19.9], 'CC':[-8.0,-19.9]
-        };
-        const initParams = {'G': [0.1,-2.8], 'C': [0.1,-2.8], 'A': [2.3,4.1], 'T': [2.3,4.1]}; // Initiation
-
-        function calculateDeltaG(seq) {
-            if(seq.length < 2) return 0;
+        // --- 2. HAIRPIN DELTA G ENGINE ---
+        function calcHairpin(seq) {
+            // Heuristic to find the most stable hairpin (lowest deltaG)
+            // Simplified approximation for checking stem-loop formation
+            if(seq.length < 4) return 0;
             const s = seq.toUpperCase();
-            let dH = 0, dS = 0;
-            
-            // 1. Initiation (Terminal corrections)
-            const first = s[0]; const last = s[s.length-1];
-            if(initParams[first]) { dH += initParams[first][0]; dS += initParams[first][1]; }
-            if(initParams[last]) { dH += initParams[last][0]; dS += initParams[last][1]; }
+            let minDg = 0; // 0 means stable (no hairpin)
 
-            // 2. Stacking
-            for(let i=0; i<s.length-1; i++) {
-                const pair = s.substr(i, 2);
-                if(nnParams[pair]) {
-                    dH += nnParams[pair][0];
-                    dS += nnParams[pair][1];
+            // Loop size >= 3 bases
+            for(let i=0; i < s.length-4; i++) { // i = start of stem 1
+                for(let j=i+4; j < s.length; j++) { // j = start of stem 2 (comp)
+                    // Check complementarity backwards from j vs forward from i
+                    let k=0;
+                    let stemDg = 0;
+                    // Check pairs
+                    while(i+k < j-k) {
+                        const b1 = s[i+k];
+                        const b2 = s[j-k];
+                        const pair = b1+b2;
+                        
+                        let pairDg = 0;
+                        if(pair=='GC'||pair=='CG') pairDg = -2.2;
+                        else if(pair=='AT'||pair=='TA') pairDg = -1.0;
+                        else if(pair=='GT'||pair=='TG') pairDg = -0.5; // Wobble
+                        else break; // Break stem
+
+                        stemDg += pairDg;
+                        k++;
+                    }
+
+                    if(k >= 2) { // Minimum stem length 2
+                        // Add Loop Penalty (approx +1.5 to +3.0 based on size)
+                        const loopSize = (j-k) - (i+k) + 1;
+                        let loopPen = 1.5 + (loopSize * 0.1); 
+                        if (loopSize > 10) loopPen += 1;
+
+                        const totalDg = stemDg + loopPen;
+                        if(totalDg < minDg) minDg = totalDg;
+                    }
                 }
             }
-            
-            // 3. Symmetry correction (if self-complementary - simplified here not to apply for primers usually)
-            
-            // Calculate dG at 37°C (310.15 K)
-            // dG = dH - TdS. (dS is in e.u. (cal/K.mol), so divide by 1000 for kcal)
-            const dG = dH - (310.15 * (dS / 1000));
-            return dG.toFixed(1);
+            return minDg.toFixed(1);
         }
 
-        let curPair = { fwd:null, rev:null };
+        let curSel = { fwd: null, rev: null };
 
-        function analyzePrimer(type) {
-            const input = document.getElementById(type+'Input');
-            const preview = document.getElementById(type+'Preview');
-            const raw = input.value;
-            const sel = raw.substring(input.selectionStart, input.selectionEnd).replace(/[^a-zA-Z]/g,'').toUpperCase();
+        function checkSelect(id) {
+            const input = document.getElementById(id+'Input');
+            const text = input.value.substring(input.selectionStart, input.selectionEnd).replace(/[^a-zA-Z]/g, '').toUpperCase();
+            const preview = document.getElementById(id+'Preview');
             
-            if(sel.length > 5) {
-                const tm = (64.9 + 41*((sel.match(/G|C/g)||[]).length - 16.4)/sel.length).toFixed(1);
-                const dg = calculateDeltaG(sel);
+            if(text.length > 5) {
+                const tm = (64.9 + 41*((text.match(/[GC]/g)||[]).length - 16.4)/text.length).toFixed(1);
+                const hpDg = calcHairpin(text); // Calculate Hairpin DeltaG
                 
-                // Colorize Preview
-                const colored = sel.split('').map(b => `<span class="base-${b}">${b}</span>`).join('');
-                preview.innerHTML = `<span class="font-bold mr-2">${colored}</span> <span class="bg-blue-100 text-blue-800 px-1 rounded text-[10px]">${sel.length}bp</span>`;
-                
-                curPair[type] = { full: raw.toUpperCase(), anneal: sel, tm: tm, dg: dg };
+                let colorClass = "text-green-600"; // Safe
+                if(hpDg < -5) colorClass = "text-red-600 font-bold"; // Bad
+                else if(hpDg < -2) colorClass = "text-orange-500 font-bold"; // Risk
+
+                preview.innerHTML = `<span class="bg-slate-100 px-1 rounded">${text}</span> (Tm:${tm}°, Hp ΔG: <span class="${colorClass}">${hpDg}</span>)`;
+                curSel[id] = { seq: text, tm: tm, hpDg: hpDg, len: text.length };
             } else {
-                preview.innerHTML = "Select annealing part...";
-                curPair[type] = null;
+                preview.innerHTML = "Highlight annealing part...";
+                curSel[id] = null;
             }
         }
 
         function addPair() {
-            if(!curPair.fwd || !curPair.rev) return alert("Select annealing part for BOTH primers.");
-            
-            const tbody = document.getElementById('primerTable');
-            const row = tbody.insertRow();
-            const count = tbody.rows.length;
-            const Ta = (Math.min(curPair.fwd.tm, curPair.rev.tm) - 5).toFixed(1);
+            if(!curSel.fwd || !curSel.rev) return alert("Highlight annealing part for both primers.");
+            const nameBase = document.getElementById('primerName').value.trim() || `Pair_${primerList.length/2 + 1}`;
+            document.getElementById('emptyMsg').style.display = 'none';
 
-            // Format Sequences
-            const fmt = (p) => p.full.replace(p.anneal, `<span class="border-b-2 border-blue-500 font-bold text-slate-800">${p.anneal}</span>`);
-
-            row.className = "hover:bg-slate-50 transition";
-            row.innerHTML = `
-                <td class="px-4 py-3 text-slate-400 text-xs font-mono">#${count}</td>
-                <td class="px-4 py-3">
-                    <div class="mb-2">
-                        <span class="badge bg-slate-200 text-slate-600">FWD</span>
-                        <div class="font-mono text-xs text-slate-400 break-all w-48">${fmt(curPair.fwd)}</div>
-                    </div>
-                    <div>
-                        <span class="badge bg-slate-200 text-slate-600">REV</span>
-                        <div class="font-mono text-xs text-slate-400 break-all w-48">${fmt(curPair.rev)}</div>
-                    </div>
-                </td>
-                <td class="px-4 py-3 align-top">
-                    <div class="text-xs mb-2">
-                        Tm: <b>${curPair.fwd.tm}°</b> <br>
-                        ΔG: <span class="${curPair.fwd.dg < -25 ? 'text-red-600' : 'text-green-600'} font-bold">${curPair.fwd.dg}</span>
-                    </div>
-                    <div class="text-xs">
-                        Tm: <b>${curPair.rev.tm}°</b> <br>
-                        ΔG: <span class="${curPair.rev.dg < -25 ? 'text-red-600' : 'text-green-600'} font-bold">${curPair.rev.dg}</span>
-                    </div>
-                    <div class="text-[10px] text-slate-400 mt-1">kcal/mol @ 37°C</div>
-                </td>
-                <td class="px-4 py-3 text-center bg-blue-50/30">
-                    <div class="text-xl font-bold text-blue-700">${Ta}°C</div>
-                </td>
-                <td class="px-4 py-3"><button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500">×</button></td>
-            `;
-        }
-
-        // --- 2. PROTEIN (Masking) ---
-        let wsId = 0;
-        function addMaskWorkspace() {
-            const seq = document.getElementById('protSeq').value.toUpperCase();
-            if(!seq) return;
-            wsId++;
-            const id = `ws-${wsId}`;
-            let html = `<div class="bg-slate-50 border border-slate-200 rounded-lg p-4 relative group" id="${id}">
-                <button onclick="document.getElementById('${id}').remove()" class="absolute top-2 right-2 text-slate-300 hover:text-red-500">✕</button>
-                <div class="flex flex-wrap gap-0.5">`;
-            
-            seq.split('').forEach((aa, i) => {
-                html += `<div class="residue-box" onclick="this.querySelector('.residue-char').classList.toggle('masked')">
-                    <div class="residue-char">${aa}</div><div class="residue-num">${i+1}</div>
-                </div>`;
-            });
-            html += `</div></div>`;
-            document.getElementById('maskContainer').insertAdjacentHTML('afterbegin', html);
-        }
-
-        // --- 3. RARE CODON (NEW LOGIC: Relative Adaptiveness) ---
-        // Data: E. coli K-12 MG1655
-        // Format: { Codon: [AA, FrequencyPerThousand] }
-        // Note: Frequencies are standard values. Key is calculating FRACTION.
-        const codonTable = {
-            'TTT':['F',22.3], 'TTC':['F',16.5], 'TTA':['L',13.7], 'TTG':['L',13.6],
-            'CTT':['L',11.0], 'CTC':['L',11.1], 'CTA':['L',3.9],  'CTG':['L',52.9],
-            'ATT':['I',30.4], 'ATC':['I',25.0], 'ATA':['I',4.5],  'ATG':['M',27.7],
-            'GTT':['V',18.3], 'GTC':['V',15.2], 'GTA':['V',10.9], 'GTG':['V',26.3],
-            'TCT':['S',8.5],  'TCC':['S',8.6],  'TCA':['S',7.1],  'TCG':['S',8.9],
-            'CCT':['P',7.0],  'CCC':['P',5.5],  'CCA':['P',8.4],  'CCG':['P',23.2],
-            'ACT':['T',8.9],  'ACC':['T',23.4], 'ACA':['T',7.1],  'ACG':['T',14.4],
-            'GCT':['A',15.3], 'GCC':['A',25.5], 'GCA':['A',20.3], 'GCG':['A',33.7],
-            'TAT':['Y',16.2], 'TAC':['Y',12.2], 'TAA':['*',2.0],  'TAG':['*',0.2],
-            'CAT':['H',12.8], 'CAC':['H',9.7],  'CAA':['Q',15.1], 'CAG':['Q',29.0],
-            'AAT':['N',17.6], 'AAC':['N',21.6], 'AAA':['K',33.2], 'AAG':['K',13.3],
-            'GAT':['D',32.2], 'GAC':['D',19.1], 'GAA':['E',39.7], 'GAG':['E',17.8],
-            'TGT':['C',5.2],  'TGC':['C',6.4],  'TGA':['*',0.9],  'TGG':['W',15.3],
-            'CGT':['R',20.9], 'CGC':['R',22.0], 'CGA':['R',3.6],  'CGG':['R',5.4],
-            'AGT':['S',8.7],  'AGC':['S',16.0], 'AGA':['R',2.1],  'AGG':['R',1.2],
-            'GGT':['G',24.7], 'GGC':['G',29.6], 'GGA':['G',7.9],  'GGG':['G',11.0]
-        };
-
-        // Pre-calculate MAX freq for each AA to determine "Relative Adaptiveness"
-        const aaMaxFreq = {};
-        Object.values(codonTable).forEach(([aa, freq]) => {
-            if(!aaMaxFreq[aa] || freq > aaMaxFreq[aa]) aaMaxFreq[aa] = freq;
-        });
-
-        function runCodonAnalysis() {
-            const dna = document.getElementById('codonInput').value.toUpperCase();
-            const vis = document.getElementById('codonVisual');
-            const list = document.getElementById('codonList');
-            
-            if(!dna) { vis.innerHTML = "Result map..."; list.innerHTML = ""; return; }
-
-            let mapHTML = "";
-            let listHTML = "";
-            let count = 0;
-
-            for(let i=0; i<dna.length; i+=3) {
-                const codon = dna.substr(i, 3);
-                if(codon.length<3) break;
+            ['fwd','rev'].forEach(type => {
+                const p = curSel[type];
+                const typeLabel = type.toUpperCase();
+                const obj = { name: nameBase + "_" + (type=='fwd'?'F':'R'), type: typeLabel, ...p };
+                primerList.push(obj);
                 
-                const data = codonTable[codon];
-                if(!data) { // Unknown
-                    mapHTML += `<span class="text-slate-300">???</span>`; continue;
-                }
+                // Color Logic
+                let dgColor = "text-green-600";
+                let badge = "";
+                if(p.hpDg < -5) { dgColor = "text-red-600 font-bold"; badge="⚠️"; }
+                else if(p.hpDg < -2) { dgColor = "text-orange-500 font-bold"; }
 
-                const [aa, freq] = data;
-                const max = aaMaxFreq[aa];
-                const ratio = freq / max;
-                const pos = (i/3)+1;
-
-                // Threshold: If relative adaptiveness < 0.1 (10%) -> RARE
-                const isRare = ratio < 0.10; 
-
-                if(isRare) {
-                    count++;
-                    mapHTML += `<span class="codon-rare" title="${codon}(${aa}) Ratio:${ratio.toFixed(2)} @${pos}">${codon}</span> `;
-                    listHTML += `<div class="flex justify-between items-center py-2 border-b border-slate-50">
-                        <div><span class="font-bold text-red-600">${codon}</span> <span class="text-xs text-slate-400">(${aa})</span></div>
-                        <div class="text-xs text-right">
-                            <span class="block font-bold">Pos: ${pos}</span>
-                            <span class="text-slate-400">Ratio: ${(ratio*100).toFixed(0)}%</span>
-                        </div>
-                    </div>`;
-                } else {
-                    mapHTML += `<span class="codon-ok" title="${codon}(${aa})">${codon}</span> `;
-                }
-            }
-            
-            vis.innerHTML = mapHTML;
-            listHTML = count > 0 ? listHTML : `<div class="text-center text-green-600 mt-10 font-bold">No rare codons found!<br><span class="text-xs font-normal text-slate-400">All codons >10% adaptiveness</span></div>`;
-            list.innerHTML = listHTML;
+                const row = document.getElementById('primerTable').insertRow();
+                row.className = "hover:bg-slate-50";
+                row.innerHTML = `
+                    <td class="px-4 py-2 font-bold text-slate-700">${obj.name}</td>
+                    <td class="px-4 py-2"><span class="bg-slate-200 text-slate-600 px-1 rounded text-[10px]">${obj.type}</span></td>
+                    <td class="px-4 py-2 break-all text-[11px]">${obj.seq}</td>
+                    <td class="px-4 py-2">${obj.len}</td>
+                    <td class="px-4 py-2 font-bold">${obj.tm}°</td>
+                    <td class="px-4 py-2 ${dgColor}">${obj.hpDg} ${badge}</td>
+                    <td class="px-4 py-2"><button onclick="removeRow(this, '${obj.name}')" class="text-red-400 hover:text-red-600">×</button></td>
+                `;
+            });
         }
 
-        // Init
-        switchTab('primer');
+        function removeRow(btn, name) {
+            btn.closest('tr').remove();
+            primerList = primerList.filter(p => p.name !== name);
+        }
+
+        function exportCSV() {
+            if(primerList.length === 0) return alert("No primers.");
+            let csv = "data:text/csv;charset=utf-8,Name,Type,Sequence,Length,Tm,Hairpin_DeltaG\n";
+            primerList.forEach(p => csv += `${p.name},${p.type},${p.seq},${p.len},${p.tm},${p.hpDg}\r\n`);
+            const link = document.createElement("a");
+            link.href = encodeURI(csv);
+            link.download = "primers_order_hairpin_check.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- 3. HELPERS & OTHER TOOLS ---
+        function revCompTool() {
+            const el = document.getElementById('revInput'); if(!el.value)return;
+            const map = {'A':'T','T':'A','G':'C','C':'G','a':'t','t':'a','g':'c','c':'g'};
+            el.value = el.value.split('').reverse().join('').replace(/[ATGCatgc]/g, b=>map[b]||b).toUpperCase();
+            handleInput('rev');
+        }
+        function addWorkspace() { /* Protein Masking Logic (Same as V7) */ 
+            const seq = document.getElementById('protSeq').value; if(!seq) return;
+            const id = `ws-${Date.now()}`;
+            let h = `<div class="bg-slate-50 border border-slate-200 rounded-lg p-4 relative" id="${id}"><div class="flex justify-between mb-2"><span class="text-xs font-bold text-slate-400">Design</span><div class="flex gap-2"><button onclick="copyMasked('${id}')" class="text-xs bg-white border px-2 py-1 rounded hover:bg-blue-50 text-blue-600 font-bold">📋 Copy Seq</button><button onclick="document.getElementById('${id}').remove()" class="text-xs text-red-300 hover:text-red-500">Remove</button></div></div><div class="flex flex-wrap gap-0.5">`;
+            seq.split('').forEach((c,i)=>h+=`<div class="residue-box" onclick="this.querySelector('.residue-char').classList.toggle('masked')"><div class="residue-char">${c}</div><div class="residue-num">${i+1}</div></div>`);
+            document.getElementById('maskContainer').insertAdjacentHTML('afterbegin', h+`</div></div>`);
+        }
+        function copyMasked(id){ 
+            let s=""; document.getElementById(id).querySelectorAll('.residue-char:not(.masked)').forEach(e=>s+=e.innerText);
+            navigator.clipboard.writeText(s).then(()=>alert("Copied!"));
+        }
+        function analyzeCodons() { /* Rare Codon Logic (Same as V7) */
+             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
+             const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
+             const freq={'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
+             const max={}; Object.keys(map).forEach(c=>{ if(!max[map[c]] || freq[c]>max[map[c]]) max[map[c]]=freq[c]; });
+             let h="";
+             for(let i=0;i<dna.length;i+=3){
+                 const c=dna.substr(i,3); if(c.length<3)break;
+                 const r=(freq[c]||0)/(max[map[c]]||1);
+                 h += r<0.1 ? `<span class="codon-rare" title="Rare!">${c}</span> ` : `<span class="text-slate-300">${c}</span> `;
+             }
+             document.getElementById('codonVisual').innerHTML = h||"Result map...";
+        }
+        function switchTab(t) { document.querySelectorAll('.tool-content').forEach(e=>e.classList.add('hidden')); document.getElementById('content-'+t).classList.remove('hidden'); }
     </script>
 </body>
 </html>
