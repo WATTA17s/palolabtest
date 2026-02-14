@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Molecular Workbench V2</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap');
+        
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Custom Selection Color */
+        ::selection { background: #bfdbfe; color: #1e3a8a; }
+
+        /* Protein Residue Styling */
+        .residue-box {
+            display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+            width: 24px; cursor: pointer; user-select: none;
+        }
+        .residue-char {
+            font-size: 1.1rem; font-weight: bold; width: 100%; text-align: center;
+            border-radius: 4px; transition: all 0.1s;
+        }
+        .residue-box:hover .residue-char { background-color: #e2e8f0; transform: scale(1.1); }
+        .residue-char.masked {
+            background-color: #374151; color: #fbbf24; text-decoration: line-through;
+        }
+        .residue-num {
+            font-size: 0.6rem; color: #94a3b8; height: 12px; margin-top: 2px;
+        }
+        
+        /* Primer Selection Area */
+        .seq-editor {
+            font-family: 'JetBrains Mono', monospace;
+            letter-spacing: 1px;
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<div class="max-w-7xl mx-auto p-4 md:p-8">
+    
+    <header class="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
+        <div>
+            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                🧬 Molecular Workbench <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">v2.0</span>
+            </h1>
+            <p class="text-slate-500 text-sm mt-1">Interactive Primer Design & Multi-track Protein Masking</p>
+        </div>
+        
+        <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
+            <button onclick="switchTab('primer')" id="tab-primer" class="px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-blue-600 transition">Primer Design</button>
+            <button onclick="switchTab('protein')" id="tab-protein" class="px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition">Protein Masking</button>
+        </div>
+    </header>
+
+    <div id="content-primer" class="tool-content">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                Primer Designer
+            </h2>
+
+            <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+                <div class="flex flex-col gap-2">
+                    <label class="text-sm font-medium text-slate-700">Sequence Input (Paste & Select Annealing Part):</label>
+                    <div class="relative">
+                        <textarea id="primerInput" 
+                            class="w-full h-24 p-3 font-mono text-lg bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none resize-none text-slate-700 leading-relaxed"
+                            placeholder="Paste your primer sequence here (5' -> 3')..."
+                            spellcheck="false"
+                            onmouseup="handleSelection()" 
+                            onkeyup="handleSelection()"></textarea>
+                        <div class="absolute top-2 right-2 text-xs text-slate-400 bg-white px-2 py-1 rounded border">Highlight text to set annealing</div>
+                    </div>
+                    
+                    <div id="primerVisual" class="hidden mt-2 text-sm">
+                        <span class="text-slate-500 mr-2">Structure:</span>
+                        <span id="p-overhang" class="font-mono text-slate-400 opacity-70"></span><span id="p-anneal" class="font-mono font-bold text-blue-700 bg-blue-100 px-1 rounded border border-blue-200"></span>
+                    </div>
+
+                    <button onclick="addCurrentPrimer()" class="self-end mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
+                        + Add to List
+                    </button>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-lg border border-slate-200">
+                <table class="w-full text-sm text-left">
+                    <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3">#</th>
+                            <th class="px-4 py-3">Sequence Structure</th>
+                            <th class="px-4 py-3 w-32">Tm (Anneal)</th>
+                            <th class="px-4 py-3">Thermodynamics (Est.)</th>
+                            <th class="px-4 py-3 w-16">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="primerTableBody" class="divide-y divide-slate-100 bg-white">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div id="content-protein" class="tool-content hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
+                Protein Masking Workspaces
+            </h2>
+
+            <div class="flex gap-4 mb-6">
+                <input id="masterProteinSeq" type="text" class="flex-1 p-3 border border-slate-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-purple-200 outline-none" placeholder="Paste Master Protein Sequence Here...">
+                <button onclick="createWorkspace()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition whitespace-nowrap">
+                    + New Workspace
+                </button>
+            </div>
+
+            <div id="workspaceContainer" class="space-y-6">
+                </div>
+            
+            <p id="emptyMsg" class="text-center text-slate-400 py-10 border-2 border-dashed border-slate-200 rounded-lg">
+                Enter a sequence and click "+ New Workspace" to start masking.
+            </p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- UTILITIES ---
+    function switchTab(tab) {
+        document.querySelectorAll('.tool-content').forEach(el => el.classList.add('hidden'));
+        document.getElementById('content-' + tab).classList.remove('hidden');
+        
+        document.getElementById('tab-primer').className = "px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition";
+        document.getElementById('tab-protein').className = "px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition";
+        
+        const activeBtn = document.getElementById('tab-' + tab);
+        activeBtn.className = tab === 'primer' 
+            ? "px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-blue-600 transition" 
+            : "px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-purple-600 transition";
+    }
+
+    // --- PRIMER LOGIC ---
+    let currentSelection = { full: '', start: 0, end: 0, annealing: '' };
+
+    function handleSelection() {
+        const textarea = document.getElementById('primerInput');
+        const full = textarea.value.replace(/[^ATGCatgc]/g, '').toUpperCase(); // Clean input
+        // Note: Selection indices in textarea might differ if we clean input. 
+        // For simplicity in this UI, we assume user pastes clean seq or we treat visual selection roughly.
+        // Better UX: Get selection from raw value, then map to clean.
+        
+        const rawVal = textarea.value;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const selectedText = rawVal.substring(start, end).replace(/[^ATGCatgc]/g, '').toUpperCase();
+        
+        if (selectedText.length > 0) {
+            currentSelection.annealing = selectedText;
+            currentSelection.full = rawVal.replace(/\s/g, '').toUpperCase(); // Store clean full
+            
+            // Show preview
+            document.getElementById('primerVisual').classList.remove('hidden');
+            const pre = rawVal.substring(0, start).replace(/\s/g, '');
+            document.getElementById('p-overhang').innerText = pre;
+            document.getElementById('p-anneal').innerText = selectedText;
+        } else {
+            document.getElementById('primerVisual').classList.add('hidden');
+            currentSelection.annealing = '';
+        }
+    }
+
+    function calculateDeltaG(seq) {
+        // Simplified Heuristic for Delta G (kcal/mol estimate)
+        // Uses base-pair stacking approximation. 
+        // G-C = -1.5, A-T = -1.0 (Very rough, just for relative risk comparison)
+        
+        // 1. Hairpin Check: Look for complementary stems > 3bp
+        let maxStemScore = 0;
+        const len = seq.length;
+        
+        // Check for self-complementarity (simple sliding window)
+        for (let i = 0; i < len - 4; i++) {
+            for (let j = i + 4; j < len; j++) {
+                // Try to match i (forward) with j (reverse)
+                let stem = 0;
+                let score = 0;
+                let k = 0;
+                while ((i+k) < (j-k) && isComp(seq[i+k], seq[j-k])) {
+                    score += (seq[i+k] === 'G' || seq[i+k] === 'C') ? 1.5 : 1.0;
+                    k++;
+                }
+                if (k >= 3 && score > maxStemScore) maxStemScore = score;
+            }
+        }
+
+        // 2. Self Dimer (3' end focus)
+        let dimerScore = 0;
+        const revSeq = seq.split('').reverse().join('');
+        // Check alignment of seq against its own reverse
+        // Simplified: check last 5 bases binding to anywhere in seq
+        const end3 = seq.slice(-5);
+        const compEnd3 = end3.split('').reverse().map(base => getComp(base)).join('');
+        if (seq.includes(compEnd3)) {
+            dimerScore = (compEnd3.split('G').length-1 + compEnd3.split('C').length-1) * 1.5 + 
+                         (compEnd3.split('A').length-1 + compEnd3.split('T').length-1) * 1.0;
+        }
+
+        return {
+            hairpin: maxStemScore > 0 ? -maxStemScore.toFixed(1) : 0,
+            dimer: dimerScore > 0 ? -dimerScore.toFixed(1) : 0
+        };
+    }
+
+    function isComp(a, b) {
+        return (a=='A'&&b=='T') || (a=='T'&&b=='A') || (a=='G'&&b=='C') || (a=='C'&&b=='G');
+    }
+    function getComp(b) {
+        return {'A':'T','T':'A','G':'C','C':'G'}[b] || b;
+    }
+
+    function addCurrentPrimer() {
+        if (!currentSelection.annealing) {
+            alert("Please highlight the annealing part in the text box first.");
+            return;
+        }
+
+        const tbody = document.getElementById('primerTableBody');
+        const count = tbody.rows.length + 1;
+        
+        // Calculate Tm (Salt adjusted)
+        const seq = currentSelection.annealing;
+        const G = (seq.match(/G/g)||[]).length;
+        const C = (seq.match(/C/g)||[]).length;
+        const tm = (64.9 + 41 * (G + C - 16.4) / seq.length).toFixed(1);
+
+        // Calculate Delta G Risk
+        const dG = calculateDeltaG(currentSelection.full); // Analyze FULL seq for hairpins
+        
+        // Create Row
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50";
+        tr.innerHTML = `
+            <td class="px-4 py-3 text-slate-500">${count}</td>
+            <td class="px-4 py-3 font-mono text-xs break-all">
+                <span class="text-slate-400">${currentSelection.full.replace(currentSelection.annealing, '')}</span><span class="font-bold text-blue-600 bg-blue-50 px-1 border border-blue-100 rounded">${currentSelection.annealing}</span>
+            </td>
+            <td class="px-4 py-3 font-bold text-slate-700">${tm} °C</td>
+            <td class="px-4 py-3 text-xs">
+                <div class="flex gap-3">
+                    <div class="${dG.hairpin < -4 ? 'text-red-500 font-bold' : 'text-slate-500'}">
+                        HP: ${dG.hairpin} <span class="text-[10px]">kcal</span>
+                    </div>
+                    <div class="${dG.dimer < -5 ? 'text-red-500 font-bold' : 'text-slate-500'}">
+                        Dimer: ${dG.dimer} <span class="text-[10px]">kcal</span>
+                    </div>
+                </div>
+            </td>
+            <td class="px-4 py-3"><button onclick="this.closest('tr').remove()" class="text-slate-400 hover:text-red-500">×</button></td>
+        `;
+        tbody.appendChild(tr);
+    }
+
+    // --- PROTEIN LOGIC ---
+    let wsCount = 0;
+
+    function createWorkspace() {
+        const masterSeq = document.getElementById('masterProteinSeq').value.replace(/\s/g, '').toUpperCase();
+        if(!masterSeq) return alert("Please enter a protein sequence first.");
+
+        document.getElementById('emptyMsg').style.display = 'none';
+        wsCount++;
+
+        const container = document.getElementById('workspaceContainer');
+        const wsId = `ws-${wsCount}`;
+        
+        const wsDiv = document.createElement('div');
+        wsDiv.className = "bg-slate-50 rounded-lg border border-slate-200 p-4 transition hover:shadow-md";
+        wsDiv.id = wsId;
+        
+        // Build Grid HTML
+        let gridHtml = `<div class="flex flex-wrap gap-1 font-mono mb-4">`;
+        masterSeq.split('').forEach((aa, idx) => {
+            const num = idx + 1;
+            const showNum = (num % 10 === 0 || num === 1) ? num : '.'; // Show num every 10
+            gridHtml += `
+                <div class="residue-box" onclick="toggleMask(this)" title="Position: ${num}">
+                    <div class="residue-char">${aa}</div>
+                    <div class="residue-num">${showNum}</div>
+                </div>`;
+        });
+        gridHtml += `</div>`;
+
+        wsDiv.innerHTML = `
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="text-sm font-bold text-slate-600 uppercase">Design Box #${wsCount}</h3>
+                <div class="flex gap-2">
+                    <button onclick="copyWs('${wsId}')" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1 rounded text-slate-600 font-medium transition">Copy Seq</button>
+                    <button onclick="document.getElementById('${wsId}').remove()" class="text-xs text-red-400 hover:text-red-600 px-2">Remove</button>
+                </div>
+            </div>
+            ${gridHtml}
+        `;
+        
+        container.prepend(wsDiv); // Add new box to top
+    }
+
+    function toggleMask(el) {
+        const charDiv = el.querySelector('.residue-char');
+        charDiv.classList.toggle('masked');
+    }
+
+    function copyWs(id) {
+        const ws = document.getElementById(id);
+        let seq = "";
+        ws.querySelectorAll('.residue-box').forEach(box => {
+            const charDiv = box.querySelector('.residue-char');
+            seq += charDiv.classList.contains('masked') ? "_" : charDiv.innerText;
+        });
+        navigator.clipboard.writeText(seq);
+        
+        // Simple feedback
+        const btn = ws.querySelector('button');
+        const oldText = btn.innerText;
+        btn.innerText = "Copied!";
+        btn.classList.add('text-green-600', 'border-green-600');
+        setTimeout(() => {
+            btn.innerText = oldText;
+            btn.classList.remove('text-green-600', 'border-green-600');
+        }, 1500);
+    }
+</script>
+</body>
+</html>
