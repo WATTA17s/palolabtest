@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V10 (Final Polish)</title>
+    <title>Molecular Workbench V11 (Perfect UX)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -23,14 +23,16 @@
             padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6;
             white-space: pre-wrap; word-wrap: break-word; overflow: auto; margin: 0; border: none; outline: none; resize: none;
         }
-        /* Layer 1: Colors */
+        
+        /* Layer 1: The Colors */
         .smart-backdrop { z-index: 1; color: transparent; pointer-events: none; background: transparent; }
-        /* Layer 2: Interaction + Custom Selection Color */
-        .smart-textarea { 
-            z-index: 2; color: transparent; background: transparent; caret-color: black; 
-        }
-        /* Make selection visible on top of colored text */
-        .smart-textarea::selection { background-color: rgba(99, 102, 241, 0.3); } 
+        
+        /* Layer 2: The Input & Selection */
+        .smart-textarea { z-index: 2; color: transparent; background: transparent; caret-color: black; }
+        
+        /* --- KEY FIX: VISIBLE SELECTION --- */
+        /* Make the selection background semi-transparent so the backdrop colors show through */
+        .smart-textarea::selection { background-color: rgba(99, 102, 241, 0.25); } 
 
         /* Color Mapping */
         .c-A { color: #16a34a; font-weight: bold; }
@@ -54,18 +56,20 @@
         .residue-char.masked { background-color: #ef4444; color: white; opacity: 0.5; }
         .residue-num { font-size: 0.6rem; color: #94a3b8; margin-top: 2px; }
 
-        /* Rare Codon Heatmap */
-        .codon-seq { line-height: 2.2; word-break: break-all; }
+        /* Rare Codon Layout */
+        .codon-row { display: flex; align-items: baseline; margin-bottom: 4px; }
+        .codon-index { width: 40px; flex-shrink: 0; color: #94a3b8; font-size: 0.7rem; text-align: right; margin-right: 12px; user-select: none; }
+        .codon-seq { display: flex; flex-wrap: wrap; gap: 2px; }
         .codon-span { 
-            display: inline-block; padding: 0 2px; margin: 0 1px; border-radius: 3px; 
-            transition: all 0.1s; position: relative; cursor: default;
+            padding: 0 2px; border-radius: 2px; font-size: 0.8rem;
+            transition: all 0.1s; cursor: default;
         }
         .codon-span:hover { background: #e0e7ff; z-index: 10; transform: scale(1.1); }
         .codon-rare { 
             background-color: #fee2e2; color: #b91c1c; font-weight: bold; 
             border-bottom: 2px solid #ef4444; 
         }
-        .codon-ok { color: #94a3b8; }
+        .codon-ok { color: #64748b; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -74,9 +78,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v10.0</span>
+                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v11.0</span>
                 </h1>
-                <p class="text-slate-500 text-sm">Full Primer Export • Clean UI • Heatmap View</p>
+                <p class="text-slate-500 text-sm">Visual Selection • Line Numbers • Silent Copy</p>
             </div>
             
             <nav class="flex gap-2">
@@ -170,12 +174,12 @@
 
     <main id="content-codon" class="tool-content hidden">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-2">🦠 Rare Codon Heatmap</h2>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">🦠 Rare Codon Map</h2>
             <p class="text-xs text-slate-500 mb-4">Organism: E. coli K-12 (Threshold < 10%)</p>
             <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm mb-4 h-24" placeholder="Paste DNA sequence here..." oninput="analyzeCodons()"></textarea>
             
-            <div class="p-6 bg-white border border-slate-200 rounded-lg shadow-inner min-h-[150px]">
-                <div id="codonVisual" class="font-mono text-xs codon-seq">
+            <div class="p-6 bg-white border border-slate-200 rounded-lg shadow-inner min-h-[150px] overflow-x-auto">
+                <div id="codonVisual" class="font-mono text-xs">
                     <span class="text-slate-300 italic">Sequence map will appear here...</span>
                 </div>
             </div>
@@ -220,7 +224,7 @@
             backdrop.scrollLeft = input.scrollLeft;
         }
 
-        function calcHairpin(seq) { // Simplified Hairpin Logic
+        function calcHairpin(seq) {
             if(seq.length < 4) return 0;
             const s = seq.toUpperCase();
             let minDg = 0;
@@ -248,9 +252,7 @@
 
         function checkSelect(id) {
             const input = document.getElementById(id+'Input');
-            // Full Sequence from Input Box
             const fullSeq = input.value.replace(/[^a-zA-Z]/g, '').toUpperCase();
-            // Annealing Part from Selection
             const selText = input.value.substring(input.selectionStart, input.selectionEnd).replace(/[^a-zA-Z]/g, '').toUpperCase();
             const status = document.getElementById(id+'Status');
             
@@ -263,7 +265,6 @@
                 else if(hpDg < -2) dgColor = "text-orange-500 font-bold";
 
                 status.innerHTML = `<span class="text-indigo-600 font-bold">Selected: ${selText.length} bp</span> | Tm: ${tm}° | Hp: <span class="${dgColor}">${hpDg}</span>`;
-                // Store FULL sequence for Table, but use Selection for Stats
                 curSel[id] = { fullSeq: fullSeq, annealing: selText, tm: tm, hpDg: hpDg, len: fullSeq.length };
             } else {
                 status.innerHTML = "Highlight annealing part to check Tm...";
@@ -272,9 +273,7 @@
         }
 
         function addPair() {
-            // Allow adding if at least full seq exists, even if not highlighted (will calc stats on full)
-            // But better stick to user flow: Must Highlight annealing
-            if(!curSel.fwd || !curSel.rev) return alert("Please HIGHLIGHT the annealing part for both primers to calculate Tm properly.");
+            if(!curSel.fwd || !curSel.rev) return alert("Please HIGHLIGHT the annealing part for both primers.");
             
             const nameBase = document.getElementById('primerName').value.trim() || `Pair_${primerList.length/2 + 1}`;
             document.getElementById('emptyMsg').style.display = 'none';
@@ -319,10 +318,8 @@
 
         function exportCSV() {
             if(primerList.length === 0) return alert("No primers.");
-            // SIMPLIFIED CSV: Name, Sequence
             let csv = "data:text/csv;charset=utf-8,Name,Sequence\n";
             primerList.forEach(p => csv += `${p.name},${p.fullSeq}\r\n`);
-            
             const link = document.createElement("a");
             link.href = encodeURI(csv);
             link.download = "primers_order_full.csv";
@@ -338,14 +335,13 @@
             handleInput('rev');
         }
 
-        // --- 2. PROTEIN MASKING (Clean UI) ---
+        // --- 2. PROTEIN MASKING (Silent Copy) ---
         function addWorkspace() {
             const seq = document.getElementById('protSeq').value; if(!seq) return;
             const id = `ws-${Date.now()}`;
-            // Removed SEQ ID text, kept just buttons
             let h = `<div class="bg-white border border-slate-200 shadow-sm rounded-lg p-4 relative" id="${id}">
                 <div class="flex justify-end mb-3 border-b border-slate-100 pb-2 gap-2">
-                    <button onclick="copyMasked('${id}')" class="text-xs bg-indigo-50 px-3 py-1 rounded text-indigo-700 font-bold hover:bg-indigo-100 transition">📋 Copy (with _ )</button>
+                    <button id="copyBtn-${id}" onclick="copyMasked('${id}')" class="text-xs bg-indigo-50 px-3 py-1 rounded text-indigo-700 font-bold hover:bg-indigo-100 transition min-w-[100px]">📋 Copy (with _ )</button>
                     <button onclick="document.getElementById('${id}').remove()" class="text-xs text-red-400 hover:text-red-600 border border-transparent hover:border-red-100 px-2 rounded">Remove</button>
                 </div>
                 <div class="flex flex-wrap gap-1">`;
@@ -364,28 +360,43 @@
                 const charEl = box.querySelector('.residue-char');
                 s += charEl.classList.contains('masked') ? "_" : charEl.innerText;
             });
-            navigator.clipboard.writeText(s).then(() => alert("Copied!"));
+            navigator.clipboard.writeText(s).then(() => {
+                // Button Feedback (No Alert)
+                const btn = document.getElementById('copyBtn-'+id);
+                const originalText = btn.innerText;
+                btn.innerText = "✅ Copied!";
+                btn.classList.add("bg-green-100", "text-green-700");
+                setTimeout(() => {
+                    btn.innerText = originalText;
+                    btn.classList.remove("bg-green-100", "text-green-700");
+                }, 1500);
+            });
         }
 
-        // --- 3. RARE CODON (Pretty Heatmap) ---
+        // --- 3. RARE CODON (With Line Numbers) ---
         function analyzeCodons() {
             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
             const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
             const freq={'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
             const max={}; Object.keys(map).forEach(c=>{ if(!max[map[c]] || freq[c]>max[map[c]]) max[map[c]]=freq[c]; });
             
-            let h = "";
-            for(let i=0; i<dna.length; i+=3) {
-                const c = dna.substr(i,3); 
-                if(c.length<3) break;
-                const aa = map[c]||'?';
-                const ratio = (freq[c]||0)/(max[aa]||1);
-                const isRare = ratio < 0.1;
-                
-                h += `<span class="codon-span ${isRare ? 'codon-rare' : 'codon-ok'}" title="${aa} (${(ratio*100).toFixed(0)}%)">${c}</span>`;
+            let html = "";
+            let codonsPerLine = 20; // 60 bp per line
+            
+            // Chunking
+            let chunks = [];
+            for (let i = 0; i < dna.length; i += 3) {
+                chunks.push(dna.substr(i, 3));
             }
-            document.getElementById('codonVisual').innerHTML = h || '<span class="text-slate-300 italic">Sequence map will appear here...</span>';
-        }
-    </script>
-</body>
-</html>
+            
+            // Building Rows
+            for(let i=0; i < chunks.length; i += codonsPerLine) {
+                const rowCodons = chunks.slice(i, i + codonsPerLine);
+                const startPos = (i * 3) + 1;
+                
+                let rowHtml = `<div class="codon-row">`;
+                rowHtml += `<div class="codon-index">${startPos}</div>`; // Line Number
+                rowHtml += `<div class="codon-seq">`;
+                
+                rowCodons.forEach(c => {
+                    if(c.length < 3
