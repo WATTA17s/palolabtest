@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V12 (Stable)</title>
+    <title>Molecular Workbench V13 (Detailed View)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* Color Mapping for Outputs */
+        /* Color Mapping for Primer Tool */
         .c-A { color: #16a34a; font-weight: bold; }
         .c-T { color: #dc2626; font-weight: bold; }
         .c-G { color: #d97706; font-weight: bold; }
@@ -22,7 +22,7 @@
         .tab-active { background-color: #4f46e5; color: white; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); }
         .tab-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
 
-        /* Protein Box */
+        /* Protein Masking Box */
         .residue-box { width: 24px; margin: 2px; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
         .residue-char { 
             font-size: 1rem; font-weight: 700; width: 100%; text-align: center; border-radius: 4px; 
@@ -32,20 +32,29 @@
         .residue-char.masked { background-color: #ef4444; color: white; opacity: 0.5; }
         .residue-num { font-size: 0.6rem; color: #94a3b8; margin-top: 2px; }
 
-        /* Rare Codon Layout */
-        .codon-row { display: flex; align-items: baseline; margin-bottom: 4px; }
-        .codon-index { width: 40px; flex-shrink: 0; color: #94a3b8; font-size: 0.7rem; text-align: right; margin-right: 12px; user-select: none; }
-        .codon-seq { display: flex; flex-wrap: wrap; gap: 2px; }
-        .codon-span { 
-            padding: 0 2px; border-radius: 2px; font-size: 0.8rem;
+        /* --- RARE CODON BOX DESIGN (NEW) --- */
+        .codon-grid { display: flex; flex-wrap: wrap; gap: 4px; align-content: flex-start; }
+        .codon-box { 
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            width: 38px; height: 52px; 
+            background: white; border: 1px solid #e2e8f0; border-radius: 6px;
             transition: all 0.1s; cursor: default;
         }
-        .codon-span:hover { background: #e0e7ff; z-index: 10; transform: scale(1.1); }
-        .codon-rare { 
-            background-color: #fee2e2; color: #b91c1c; font-weight: bold; 
-            border-bottom: 2px solid #ef4444; 
-        }
-        .codon-ok { color: #64748b; }
+        .codon-box:hover { transform: scale(1.15); z-index: 20; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); border-color: #cbd5e1; }
+        
+        /* Rare Codon State */
+        .codon-box.is-rare { background-color: #fee2e2; border-color: #fca5a5; }
+        .codon-box.is-rare .cb-seq { color: #b91c1c; font-weight: bold; }
+        
+        /* Inner Text */
+        .cb-aa { font-size: 10px; font-weight: bold; color: #64748b; line-height: 1; margin-bottom: 2px; }
+        .cb-seq { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #334155; line-height: 1; }
+        .cb-pos { font-size: 9px; color: #94a3b8; margin-top: 2px; line-height: 1; }
+        
+        /* Helper for Rare Highlight text */
+        .is-rare .cb-aa { color: #ef4444; }
+        .is-rare .cb-pos { color: #f87171; }
+
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -54,9 +63,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v12.0</span>
+                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v13.0</span>
                 </h1>
-                <p class="text-slate-500 text-sm">Stable Inputs • No Glitches • Accurate Tools</p>
+                <p class="text-slate-500 text-sm">Detailed Codon Grid • Position per Block</p>
             </div>
             
             <nav class="flex gap-2">
@@ -69,17 +78,14 @@
 
     <main id="content-primer" class="tool-content">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            
             <div class="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Forward Primer (5'➝3')</label>
                     <textarea id="fwdInput" class="w-full h-32 p-3 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm" 
                         spellcheck="false" placeholder="Paste Sequence here..."
                         onmouseup="checkSelect('fwd')" onkeyup="checkSelect('fwd')"></textarea>
-                    
                     <div id="fwdStatus" class="mt-2 text-xs text-slate-500 italic h-5 border-l-2 border-indigo-200 pl-2">Highlight annealing part to check Tm...</div>
                 </div>
-
                 <div>
                     <div class="flex justify-between mb-2">
                         <label class="block text-sm font-bold text-slate-700">Reverse Primer (5'➝3')</label>
@@ -88,7 +94,6 @@
                     <textarea id="revInput" class="w-full h-32 p-3 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm" 
                         spellcheck="false" placeholder="Paste Sequence here..."
                         onmouseup="checkSelect('rev')" onkeyup="checkSelect('rev')"></textarea>
-                    
                     <div id="revStatus" class="mt-2 text-xs text-slate-500 italic h-5 border-l-2 border-indigo-200 pl-2">Highlight annealing part to check Tm...</div>
                 </div>
             </div>
@@ -109,7 +114,6 @@
                     📄 Export CSV (Name & Seq Only)
                 </button>
             </div>
-            
             <div class="overflow-x-auto border border-slate-200 rounded-lg">
                 <table class="w-full text-left text-sm">
                     <thead class="bg-slate-50 text-slate-500 font-semibold border-b border-slate-200 text-xs uppercase">
@@ -123,8 +127,7 @@
                             <th class="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
-                    <tbody id="primerTable" class="bg-white divide-y divide-slate-100 font-mono text-xs">
-                        </tbody>
+                    <tbody id="primerTable" class="bg-white divide-y divide-slate-100 font-mono text-xs"></tbody>
                 </table>
                 <div id="emptyMsg" class="p-6 text-center text-slate-400 italic text-sm">No primers added yet.</div>
             </div>
@@ -145,12 +148,12 @@
     <main id="content-codon" class="tool-content hidden">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 class="text-xl font-bold text-slate-800 mb-2">🦠 Rare Codon Map</h2>
-            <p class="text-xs text-slate-500 mb-4">Organism: E. coli K-12 (Threshold < 10%)</p>
+            <p class="text-xs text-slate-500 mb-4">Organism: E. coli K-12 (Threshold < 10%) | Showing AA, Codon, and Start Position</p>
             <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm mb-4 h-24" placeholder="Paste DNA sequence here..." oninput="analyzeCodons()"></textarea>
             
-            <div class="p-6 bg-white border border-slate-200 rounded-lg shadow-inner min-h-[150px] overflow-x-auto">
-                <div id="codonVisual" class="font-mono text-xs">
-                    <span class="text-slate-300 italic">Sequence map will appear here...</span>
+            <div class="p-6 bg-slate-50 border border-slate-200 rounded-lg shadow-inner min-h-[150px]">
+                <div id="codonVisual" class="codon-grid">
+                    <span class="text-slate-400 italic text-xs w-full text-center mt-4">Paste sequence above to generate map...</span>
                 </div>
             </div>
         </div>
@@ -180,7 +183,7 @@
             });
         }
 
-        // --- 1. PRIMER LOGIC (Stable) ---
+        // --- 1. PRIMER LOGIC ---
         function calcHairpin(seq) {
             if(seq.length < 4) return 0;
             const s = seq.toUpperCase();
@@ -216,11 +219,9 @@
             if(selText.length > 5) {
                 const tm = (64.9 + 41*((selText.match(/[GC]/g)||[]).length - 16.4)/selText.length).toFixed(1);
                 const hpDg = calcHairpin(selText);
-                
                 let dgColor = "text-green-600";
                 if(hpDg < -5) dgColor = "text-red-600 font-bold";
                 else if(hpDg < -2) dgColor = "text-orange-500 font-bold";
-
                 status.innerHTML = `<span class="text-indigo-600 font-bold">Selected: ${selText.length} bp</span> | Tm: ${tm}° | Hp: <span class="${dgColor}">${hpDg}</span>`;
                 curSel[id] = { fullSeq: fullSeq, annealing: selText, tm: tm, hpDg: hpDg, len: fullSeq.length };
             } else {
@@ -231,7 +232,6 @@
 
         function addPair() {
             if(!curSel.fwd || !curSel.rev) return alert("Please HIGHLIGHT the annealing part for both primers.");
-            
             const nameBase = document.getElementById('primerName').value.trim() || `Pair_${primerList.length/2 + 1}`;
             document.getElementById('emptyMsg').style.display = 'none';
 
@@ -240,10 +240,6 @@
                 const typeName = type=='fwd'?'F':'R';
                 const obj = { name: nameBase + "_" + typeName, type: type.toUpperCase(), ...p };
                 primerList.push(obj);
-                
-                let badge = "";
-                if(p.hpDg < -5) badge="⚠️";
-
                 const tbody = document.getElementById('primerTable');
                 const row = tbody.insertRow();
                 row.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
@@ -253,12 +249,11 @@
                     <td class="px-4 py-3 break-all text-[11px] font-mono leading-tight bg-slate-50/50 rounded">${colorizeHTML(obj.fullSeq)}</td>
                     <td class="px-4 py-3">${obj.len}</td>
                     <td class="px-4 py-3 font-bold">${obj.tm}°</td>
-                    <td class="px-4 py-3 ${p.hpDg < -2 ? 'text-red-600 font-bold' : 'text-green-600'}">${obj.hpDg} ${badge}</td>
+                    <td class="px-4 py-3 ${obj.hpDg < -2 ? 'text-red-600 font-bold' : 'text-green-600'}">${obj.hpDg} ${obj.hpDg < -5 ? '⚠️':''}</td>
                     <td class="px-4 py-3"><button onclick="removeRow(this, '${obj.name}')" class="text-red-300 hover:text-red-500 text-lg">×</button></td>
                 `;
             });
 
-            // RESET
             document.getElementById('fwdInput').value = "";
             document.getElementById('revInput').value = "";
             document.getElementById('primerName').value = "";
@@ -280,8 +275,7 @@
             link.href = encodeURI(csv);
             link.download = "primers_order_full.csv";
             document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            link.click(); document.body.removeChild(link);
         }
 
         function revCompTool() {
@@ -290,7 +284,7 @@
             el.value = el.value.split('').reverse().join('').replace(/[ATGCatgc]/g, b=>map[b]||b).toUpperCase();
         }
 
-        // --- 2. PROTEIN MASKING (Silent Copy) ---
+        // --- 2. PROTEIN MASKING ---
         function addWorkspace() {
             const seq = document.getElementById('protSeq').value; if(!seq) return;
             const id = `ws-${Date.now()}`;
@@ -300,15 +294,9 @@
                     <button onclick="document.getElementById('${id}').remove()" class="text-xs text-red-400 hover:text-red-600 border border-transparent hover:border-red-100 px-2 rounded">Remove</button>
                 </div>
                 <div class="flex flex-wrap gap-1">`;
-            
-            seq.split('').forEach((c,i)=>h+=`<div class="residue-box" title="Pos: ${i+1}" onclick="this.querySelector('.residue-char').classList.toggle('masked')">
-                <div class="residue-char">${c}</div>
-                <div class="residue-num">${i+1}</div>
-            </div>`);
-            
+            seq.split('').forEach((c,i)=>h+=`<div class="residue-box" title="Pos: ${i+1}" onclick="this.querySelector('.residue-char').classList.toggle('masked')"><div class="residue-char">${c}</div><div class="residue-num">${i+1}</div></div>`);
             document.getElementById('maskContainer').insertAdjacentHTML('afterbegin', h+`</div></div>`);
         }
-
         function copyMasked(id) {
             let s = "";
             document.getElementById(id).querySelectorAll('.residue-box').forEach(box => {
@@ -316,18 +304,13 @@
                 s += charEl.classList.contains('masked') ? "_" : charEl.innerText;
             });
             navigator.clipboard.writeText(s).then(() => {
-                const btn = document.getElementById('copyBtn-'+id);
-                const originalText = btn.innerText;
-                btn.innerText = "✅ Copied!";
-                btn.classList.add("bg-green-100", "text-green-700");
-                setTimeout(() => {
-                    btn.innerText = originalText;
-                    btn.classList.remove("bg-green-100", "text-green-700");
-                }, 1500);
+                const btn = document.getElementById('copyBtn-'+id); const t = btn.innerText;
+                btn.innerText = "✅ Copied!"; btn.classList.add("bg-green-100", "text-green-700");
+                setTimeout(() => { btn.innerText = t; btn.classList.remove("bg-green-100", "text-green-700"); }, 1500);
             });
         }
 
-        // --- 3. RARE CODON (Fixed Layout) ---
+        // --- 3. RARE CODON (BOX VIEW WITH POSITIONS) ---
         function analyzeCodons() {
             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
             const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
@@ -335,26 +318,26 @@
             const max={}; Object.keys(map).forEach(c=>{ if(!max[map[c]] || freq[c]>max[map[c]]) max[map[c]]=freq[c]; });
             
             let html = "";
-            let chunks = [];
-            for (let i = 0; i < dna.length; i += 3) chunks.push(dna.substr(i, 3));
-
-            for(let i=0; i < chunks.length; i += 20) {
-                const rowCodons = chunks.slice(i, i + 20);
-                const startPos = (i * 3) + 1;
+            for (let i = 0; i < dna.length; i += 3) {
+                const c = dna.substr(i, 3);
+                if(c.length < 3) break;
                 
-                let rowHtml = `<div class="codon-row"><div class="codon-index">${startPos}</div><div class="codon-seq">`;
-                rowCodons.forEach(c => {
-                    if(c.length < 3) return;
-                    const aa = map[c]||'?';
-                    const ratio = (freq[c]||0)/(max[aa]||1);
-                    const isRare = ratio < 0.1;
-                    rowHtml += `<span class="codon-span ${isRare ? 'codon-rare' : 'codon-ok'}" title="${aa} (${(ratio*100).toFixed(0)}%)">${c}</span>`;
-                });
-                rowHtml += `</div></div>`;
-                html += rowHtml;
+                const aa = map[c] || '?';
+                const startPos = i + 1;
+                const ratio = (freq[c]||0)/(max[aa]||1);
+                const isRare = ratio < 0.1;
+                
+                // Box Layout: AA (top), Seq (mid), Pos (bot)
+                html += `
+                <div class="codon-box ${isRare ? 'is-rare' : ''}" title="${aa} | Freq: ${(ratio*100).toFixed(0)}%">
+                    <div class="cb-aa">${aa}</div>
+                    <div class="cb-seq">${c}</div>
+                    <div class="cb-pos">${startPos}</div>
+                </div>
+                `;
             }
 
-            document.getElementById('codonVisual').innerHTML = html || '<span class="text-slate-300 italic">Sequence map will appear here...</span>';
+            document.getElementById('codonVisual').innerHTML = html || '<span class="text-slate-400 italic text-xs w-full text-center mt-4">Paste sequence above to generate map...</span>';
         }
     </script>
 </body>
