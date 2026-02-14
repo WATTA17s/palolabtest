@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V2</title>
+    <title>Molecular Workbench V3 (Pairs & Codons)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap');
         
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
         /* Custom Selection Color */
@@ -27,75 +27,83 @@
         .residue-char.masked {
             background-color: #374151; color: #fbbf24; text-decoration: line-through;
         }
-        .residue-num {
-            font-size: 0.6rem; color: #94a3b8; height: 12px; margin-top: 2px;
-        }
+        .residue-num { font-size: 0.6rem; color: #94a3b8; height: 12px; margin-top: 2px; }
+
+        /* Codon Styling */
+        .codon-span { padding: 0 2px; border-radius: 2px; transition: background 0.2s; }
+        .codon-rare { background-color: #fee2e2; color: #dc2626; font-weight: bold; text-decoration: underline; text-decoration-style: dotted; cursor: help; }
+        .codon-rare:hover { background-color: #fecaca; }
         
-        /* Primer Selection Area */
-        .seq-editor {
-            font-family: 'JetBrains Mono', monospace;
-            letter-spacing: 1px;
+        /* Status Badge for Primer Selection */
+        .status-badge {
+            font-size: 0.75rem; padding: 2px 8px; border-radius: 999px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 4px; transition: all 0.3s;
         }
+        .status-empty { background: #f1f5f9; color: #94a3b8; }
+        .status-ok { background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; }
     </style>
 </head>
-<body class="text-slate-800">
+<body class="text-slate-800 p-4 md:p-8">
 
-<div class="max-w-7xl mx-auto p-4 md:p-8">
+<div class="max-w-7xl mx-auto">
     
-    <header class="flex justify-between items-center mb-8 border-b border-slate-200 pb-4">
+    <header class="flex flex-col md:flex-row justify-between items-center mb-6 border-b border-slate-200 pb-4 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">v2.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-indigo-100 text-indigo-700 px-2 py-1 rounded-full">v3.0</span>
             </h1>
-            <p class="text-slate-500 text-sm mt-1">Interactive Primer Design & Multi-track Protein Masking</p>
+            <p class="text-slate-500 text-sm mt-1">Primer Pairs • Protein Masking • Rare Codons</p>
         </div>
         
-        <div class="flex space-x-1 bg-slate-100 p-1 rounded-lg">
-            <button onclick="switchTab('primer')" id="tab-primer" class="px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-blue-600 transition">Primer Design</button>
-            <button onclick="switchTab('protein')" id="tab-protein" class="px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition">Protein Masking</button>
+        <div class="flex space-x-1 bg-slate-200 p-1 rounded-lg">
+            <button onclick="switchTab('primer')" id="tab-primer" class="tab-btn active-tab">Primer Pairs</button>
+            <button onclick="switchTab('protein')" id="tab-protein" class="tab-btn inactive-tab">Protein Masking</button>
+            <button onclick="switchTab('codon')" id="tab-codon" class="tab-btn inactive-tab">Rare Codon</button>
         </div>
     </header>
 
     <div id="content-primer" class="tool-content">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <svg class="w-5 h-5 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                Primer Designer
+            <h2 class="text-lg font-semibold mb-4 text-blue-700 flex items-center gap-2">
+                ⚡ Primer Pair Designer
             </h2>
+            <p class="text-sm text-slate-500 mb-4">Paste sequences and <span class="bg-blue-100 text-blue-800 px-1 rounded">highlight</span> the annealing part for EACH primer.</p>
 
-            <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-100">
+            <div class="grid md:grid-cols-2 gap-6 mb-4">
                 <div class="flex flex-col gap-2">
-                    <label class="text-sm font-medium text-slate-700">Sequence Input (Paste & Select Annealing Part):</label>
-                    <div class="relative">
-                        <textarea id="primerInput" 
-                            class="w-full h-24 p-3 font-mono text-lg bg-white border border-blue-200 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none resize-none text-slate-700 leading-relaxed"
-                            placeholder="Paste your primer sequence here (5' -> 3')..."
-                            spellcheck="false"
-                            onmouseup="handleSelection()" 
-                            onkeyup="handleSelection()"></textarea>
-                        <div class="absolute top-2 right-2 text-xs text-slate-400 bg-white px-2 py-1 rounded border">Highlight text to set annealing</div>
+                    <div class="flex justify-between items-center">
+                        <label class="font-bold text-sm text-slate-700">Forward Primer (5'➝3')</label>
+                        <span id="fwdStatus" class="status-badge status-empty">Waiting for selection...</span>
                     </div>
-                    
-                    <div id="primerVisual" class="hidden mt-2 text-sm">
-                        <span class="text-slate-500 mr-2">Structure:</span>
-                        <span id="p-overhang" class="font-mono text-slate-400 opacity-70"></span><span id="p-anneal" class="font-mono font-bold text-blue-700 bg-blue-100 px-1 rounded border border-blue-200"></span>
-                    </div>
+                    <textarea id="fwdInput" class="w-full h-24 p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none resize-none"
+                        placeholder="Paste Forward Primer..." onmouseup="handlePrimerSelect('fwd')" onkeyup="handlePrimerSelect('fwd')"></textarea>
+                </div>
 
-                    <button onclick="addCurrentPrimer()" class="self-end mt-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg shadow-sm transition">
-                        + Add to List
-                    </button>
+                <div class="flex flex-col gap-2">
+                    <div class="flex justify-between items-center">
+                        <label class="font-bold text-sm text-slate-700">Reverse Primer (5'➝3')</label>
+                        <span id="revStatus" class="status-badge status-empty">Waiting for selection...</span>
+                    </div>
+                    <textarea id="revInput" class="w-full h-24 p-3 font-mono text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-400 outline-none resize-none"
+                        placeholder="Paste Reverse Primer..." onmouseup="handlePrimerSelect('rev')" onkeyup="handlePrimerSelect('rev')"></textarea>
                 </div>
             </div>
 
-            <div class="overflow-hidden rounded-lg border border-slate-200">
+            <div class="flex justify-end mb-6">
+                <button onclick="addPrimerPair()" class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition flex items-center gap-2">
+                    <span>+ Add Pair to List</span>
+                </button>
+            </div>
+
+            <div class="overflow-x-auto rounded-lg border border-slate-200">
                 <table class="w-full text-sm text-left">
-                    <thead class="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
+                    <thead class="bg-slate-50 text-slate-600 border-b border-slate-200">
                         <tr>
                             <th class="px-4 py-3">#</th>
-                            <th class="px-4 py-3">Sequence Structure</th>
-                            <th class="px-4 py-3 w-32">Tm (Anneal)</th>
-                            <th class="px-4 py-3">Thermodynamics (Est.)</th>
-                            <th class="px-4 py-3 w-16">Action</th>
+                            <th class="px-4 py-3">Forward Analysis</th>
+                            <th class="px-4 py-3">Reverse Analysis</th>
+                            <th class="px-4 py-3 w-32 text-center">Pair Check</th>
+                            <th class="px-4 py-3 w-10"></th>
                         </tr>
                     </thead>
                     <tbody id="primerTableBody" class="divide-y divide-slate-100 bg-white">
@@ -107,232 +115,233 @@
 
     <div id="content-protein" class="tool-content hidden">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
-                <svg class="w-5 h-5 text-purple-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>
-                Protein Masking Workspaces
-            </h2>
-
+            <h2 class="text-lg font-semibold mb-4 text-purple-700">🎭 Protein Masking Workspaces</h2>
             <div class="flex gap-4 mb-6">
-                <input id="masterProteinSeq" type="text" class="flex-1 p-3 border border-slate-200 rounded-lg font-mono text-sm focus:ring-2 focus:ring-purple-200 outline-none" placeholder="Paste Master Protein Sequence Here...">
-                <button onclick="createWorkspace()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg shadow-sm transition whitespace-nowrap">
-                    + New Workspace
-                </button>
+                <input id="masterProteinSeq" type="text" class="flex-1 p-3 border border-slate-200 rounded-lg font-mono text-sm outline-none focus:border-purple-400" placeholder="Paste Protein Sequence...">
+                <button onclick="createWorkspace()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-medium rounded-lg transition whitespace-nowrap">+ New Mask Box</button>
+            </div>
+            <div id="workspaceContainer" class="space-y-6"></div>
+        </div>
+    </div>
+
+    <div id="content-codon" class="tool-content hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-lg font-semibold mb-4 text-red-600">🦠 E. coli Rare Codon Finder</h2>
+            
+            <div class="mb-4">
+                <textarea id="codonInput" class="w-full p-3 border border-slate-300 rounded-lg font-mono text-sm outline-none focus:ring-2 focus:ring-red-200" rows="3" placeholder="Paste DNA Coding Sequence (ATG...)" oninput="analyzeCodons()"></textarea>
             </div>
 
-            <div id="workspaceContainer" class="space-y-6">
+            <div class="grid md:grid-cols-3 gap-6">
+                <div class="md:col-span-2">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase mb-2">Sequence Map</h3>
+                    <div id="codonVisual" class="p-4 bg-slate-50 border border-slate-200 rounded-lg font-mono text-sm break-all leading-relaxed min-h-[150px]">
+                        <span class="text-slate-400">Result will appear here...</span>
+                    </div>
                 </div>
+
+                <div class="md:col-span-1">
+                    <h3 class="text-sm font-bold text-slate-500 uppercase mb-2">Rare Positions</h3>
+                    <div id="codonReport" class="p-4 bg-white border border-slate-200 rounded-lg h-[300px] overflow-y-auto text-sm shadow-inner">
+                        <ul class="text-slate-500 text-xs"><li>No sequence loaded.</li></ul>
+                    </div>
+                </div>
+            </div>
             
-            <p id="emptyMsg" class="text-center text-slate-400 py-10 border-2 border-dashed border-slate-200 rounded-lg">
-                Enter a sequence and click "+ New Workspace" to start masking.
-            </p>
+            <div class="mt-4 flex gap-4 text-xs text-slate-500 items-center">
+                <div class="flex items-center gap-1"><span class="w-3 h-3 bg-red-200 border border-red-400 rounded-sm block"></span> Rare (<10‰)</div>
+                <div>Based on E. coli K-12 Kazusa Database</div>
+            </div>
         </div>
     </div>
 
 </div>
 
 <script>
-    // --- UTILITIES ---
+    // --- UI HELPERS ---
+    const btnBase = "px-4 py-2 text-sm font-medium rounded-md transition ";
+    const btnActive = btnBase + "bg-white text-blue-600 shadow font-bold";
+    const btnInactive = btnBase + "text-slate-500 hover:bg-white hover:text-slate-700";
+
     function switchTab(tab) {
         document.querySelectorAll('.tool-content').forEach(el => el.classList.add('hidden'));
         document.getElementById('content-' + tab).classList.remove('hidden');
         
-        document.getElementById('tab-primer').className = "px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition";
-        document.getElementById('tab-protein').className = "px-4 py-2 text-sm font-medium rounded-md text-slate-500 hover:text-slate-700 hover:bg-white transition";
-        
-        const activeBtn = document.getElementById('tab-' + tab);
-        activeBtn.className = tab === 'primer' 
-            ? "px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-blue-600 transition" 
-            : "px-4 py-2 text-sm font-medium rounded-md shadow bg-white text-purple-600 transition";
+        ['primer', 'protein', 'codon'].forEach(t => {
+            document.getElementById('tab-' + t).className = (t === tab) ? btnActive : btnInactive;
+        });
     }
+    // Init styles
+    switchTab('primer');
 
-    // --- PRIMER LOGIC ---
-    let currentSelection = { full: '', start: 0, end: 0, annealing: '' };
+    // --- 1. PRIMER PAIR LOGIC ---
+    let primerData = {
+        fwd: { seq: '', anneal: '', tm: 0, valid: false },
+        rev: { seq: '', anneal: '', tm: 0, valid: false }
+    };
 
-    function handleSelection() {
-        const textarea = document.getElementById('primerInput');
-        const full = textarea.value.replace(/[^ATGCatgc]/g, '').toUpperCase(); // Clean input
-        // Note: Selection indices in textarea might differ if we clean input. 
-        // For simplicity in this UI, we assume user pastes clean seq or we treat visual selection roughly.
-        // Better UX: Get selection from raw value, then map to clean.
+    function handlePrimerSelect(type) {
+        const input = document.getElementById(type + 'Input');
+        const raw = input.value;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const selected = raw.substring(start, end).replace(/[^ATGCatgc]/g, '').toUpperCase();
         
-        const rawVal = textarea.value;
-        const start = textarea.selectionStart;
-        const end = textarea.selectionEnd;
-        const selectedText = rawVal.substring(start, end).replace(/[^ATGCatgc]/g, '').toUpperCase();
+        const statusBadge = document.getElementById(type + 'Status');
         
-        if (selectedText.length > 0) {
-            currentSelection.annealing = selectedText;
-            currentSelection.full = rawVal.replace(/\s/g, '').toUpperCase(); // Store clean full
-            
-            // Show preview
-            document.getElementById('primerVisual').classList.remove('hidden');
-            const pre = rawVal.substring(0, start).replace(/\s/g, '');
-            document.getElementById('p-overhang').innerText = pre;
-            document.getElementById('p-anneal').innerText = selectedText;
+        if (selected.length > 5) {
+            // Save Data
+            primerData[type].seq = raw.replace(/\s/g, '').toUpperCase();
+            primerData[type].anneal = selected;
+            primerData[type].tm = calculateTm(selected);
+            primerData[type].valid = true;
+
+            // Update Badge
+            statusBadge.className = "status-badge status-ok";
+            statusBadge.innerHTML = `✓ Annealing Set: ${selected.length}bp (Tm ${primerData[type].tm}°C)`;
         } else {
-            document.getElementById('primerVisual').classList.add('hidden');
-            currentSelection.annealing = '';
-        }
-    }
-
-    function calculateDeltaG(seq) {
-        // Simplified Heuristic for Delta G (kcal/mol estimate)
-        // Uses base-pair stacking approximation. 
-        // G-C = -1.5, A-T = -1.0 (Very rough, just for relative risk comparison)
-        
-        // 1. Hairpin Check: Look for complementary stems > 3bp
-        let maxStemScore = 0;
-        const len = seq.length;
-        
-        // Check for self-complementarity (simple sliding window)
-        for (let i = 0; i < len - 4; i++) {
-            for (let j = i + 4; j < len; j++) {
-                // Try to match i (forward) with j (reverse)
-                let stem = 0;
-                let score = 0;
-                let k = 0;
-                while ((i+k) < (j-k) && isComp(seq[i+k], seq[j-k])) {
-                    score += (seq[i+k] === 'G' || seq[i+k] === 'C') ? 1.5 : 1.0;
-                    k++;
-                }
-                if (k >= 3 && score > maxStemScore) maxStemScore = score;
+            // Only clear if empty selection, but keep old data if user just clicked without selecting
+            if (start === end && !primerData[type].valid) {
+                 statusBadge.className = "status-badge status-empty";
+                 statusBadge.innerHTML = "Select annealing part...";
             }
         }
-
-        // 2. Self Dimer (3' end focus)
-        let dimerScore = 0;
-        const revSeq = seq.split('').reverse().join('');
-        // Check alignment of seq against its own reverse
-        // Simplified: check last 5 bases binding to anywhere in seq
-        const end3 = seq.slice(-5);
-        const compEnd3 = end3.split('').reverse().map(base => getComp(base)).join('');
-        if (seq.includes(compEnd3)) {
-            dimerScore = (compEnd3.split('G').length-1 + compEnd3.split('C').length-1) * 1.5 + 
-                         (compEnd3.split('A').length-1 + compEnd3.split('T').length-1) * 1.0;
-        }
-
-        return {
-            hairpin: maxStemScore > 0 ? -maxStemScore.toFixed(1) : 0,
-            dimer: dimerScore > 0 ? -dimerScore.toFixed(1) : 0
-        };
     }
 
-    function isComp(a, b) {
-        return (a=='A'&&b=='T') || (a=='T'&&b=='A') || (a=='G'&&b=='C') || (a=='C'&&b=='G');
-    }
-    function getComp(b) {
-        return {'A':'T','T':'A','G':'C','C':'G'}[b] || b;
+    function calculateTm(seq) {
+        if(!seq) return 0;
+        const G = (seq.match(/G/g)||[]).length;
+        const C = (seq.match(/C/g)||[]).length;
+        return (64.9 + 41 * (G + C - 16.4) / seq.length).toFixed(1);
     }
 
-    function addCurrentPrimer() {
-        if (!currentSelection.annealing) {
-            alert("Please highlight the annealing part in the text box first.");
+    function addPrimerPair() {
+        if (!primerData.fwd.valid || !primerData.rev.valid) {
+            alert("Please highlight the annealing portion for BOTH primers.");
             return;
         }
 
         const tbody = document.getElementById('primerTableBody');
         const count = tbody.rows.length + 1;
-        
-        // Calculate Tm (Salt adjusted)
-        const seq = currentSelection.annealing;
-        const G = (seq.match(/G/g)||[]).length;
-        const C = (seq.match(/C/g)||[]).length;
-        const tm = (64.9 + 41 * (G + C - 16.4) / seq.length).toFixed(1);
+        const tmDiff = Math.abs(primerData.fwd.tm - primerData.rev.tm).toFixed(1);
+        const diffColor = tmDiff > 5 ? "text-red-500 font-bold" : "text-green-600";
 
-        // Calculate Delta G Risk
-        const dG = calculateDeltaG(currentSelection.full); // Analyze FULL seq for hairpins
-        
-        // Create Row
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50";
+        tr.className = "hover:bg-slate-50 transition";
         tr.innerHTML = `
-            <td class="px-4 py-3 text-slate-500">${count}</td>
-            <td class="px-4 py-3 font-mono text-xs break-all">
-                <span class="text-slate-400">${currentSelection.full.replace(currentSelection.annealing, '')}</span><span class="font-bold text-blue-600 bg-blue-50 px-1 border border-blue-100 rounded">${currentSelection.annealing}</span>
+            <td class="px-4 py-3 text-slate-400 font-mono text-xs">${count}</td>
+            <td class="px-4 py-3">
+                <div class="text-xs font-bold text-slate-600 mb-1">FWD</div>
+                <div class="font-mono text-xs break-all text-slate-400 w-48">${formatSeq(primerData.fwd.seq, primerData.fwd.anneal)}</div>
+                <div class="text-xs mt-1 text-blue-600 font-bold">Tm: ${primerData.fwd.tm}°C</div>
             </td>
-            <td class="px-4 py-3 font-bold text-slate-700">${tm} °C</td>
-            <td class="px-4 py-3 text-xs">
-                <div class="flex gap-3">
-                    <div class="${dG.hairpin < -4 ? 'text-red-500 font-bold' : 'text-slate-500'}">
-                        HP: ${dG.hairpin} <span class="text-[10px]">kcal</span>
-                    </div>
-                    <div class="${dG.dimer < -5 ? 'text-red-500 font-bold' : 'text-slate-500'}">
-                        Dimer: ${dG.dimer} <span class="text-[10px]">kcal</span>
-                    </div>
-                </div>
+            <td class="px-4 py-3">
+                <div class="text-xs font-bold text-slate-600 mb-1">REV</div>
+                <div class="font-mono text-xs break-all text-slate-400 w-48">${formatSeq(primerData.rev.seq, primerData.rev.anneal)}</div>
+                <div class="text-xs mt-1 text-blue-600 font-bold">Tm: ${primerData.rev.tm}°C</div>
             </td>
-            <td class="px-4 py-3"><button onclick="this.closest('tr').remove()" class="text-slate-400 hover:text-red-500">×</button></td>
+            <td class="px-4 py-3 text-center border-l border-slate-100">
+                <div class="text-xs text-slate-500">ΔTm</div>
+                <div class="text-lg ${diffColor}">${tmDiff}°C</div>
+            </td>
+            <td class="px-4 py-3 text-center"><button onclick="this.closest('tr').remove()" class="text-slate-300 hover:text-red-500">×</button></td>
         `;
         tbody.appendChild(tr);
     }
 
-    // --- PROTEIN LOGIC ---
+    function formatSeq(full, anneal) {
+        return full.replace(anneal, `<span class="text-black font-bold border-b-2 border-blue-400">${anneal}</span>`);
+    }
+
+    // --- 2. PROTEIN LOGIC (Reuse from v2) ---
     let wsCount = 0;
-
     function createWorkspace() {
-        const masterSeq = document.getElementById('masterProteinSeq').value.replace(/\s/g, '').toUpperCase();
-        if(!masterSeq) return alert("Please enter a protein sequence first.");
-
-        document.getElementById('emptyMsg').style.display = 'none';
+        const seq = document.getElementById('masterProteinSeq').value.replace(/\s/g, '').toUpperCase();
+        if(!seq) return;
         wsCount++;
-
-        const container = document.getElementById('workspaceContainer');
         const wsId = `ws-${wsCount}`;
         
-        const wsDiv = document.createElement('div');
-        wsDiv.className = "bg-slate-50 rounded-lg border border-slate-200 p-4 transition hover:shadow-md";
-        wsDiv.id = wsId;
-        
-        // Build Grid HTML
-        let gridHtml = `<div class="flex flex-wrap gap-1 font-mono mb-4">`;
-        masterSeq.split('').forEach((aa, idx) => {
-            const num = idx + 1;
-            const showNum = (num % 10 === 0 || num === 1) ? num : '.'; // Show num every 10
-            gridHtml += `
-                <div class="residue-box" onclick="toggleMask(this)" title="Position: ${num}">
-                    <div class="residue-char">${aa}</div>
-                    <div class="residue-num">${showNum}</div>
-                </div>`;
+        // Grid Logic
+        let grid = `<div class="flex flex-wrap gap-1 font-mono mb-2">`;
+        seq.split('').forEach((aa, i) => {
+            const num = i + 1;
+            const displayNum = (num % 10 === 0 || num === 1) ? num : '.';
+            grid += `<div class="residue-box" onclick="this.querySelector('.residue-char').classList.toggle('masked')" title="Pos: ${num}">
+                        <div class="residue-char">${aa}</div>
+                        <div class="residue-num">${displayNum}</div>
+                     </div>`;
         });
-        gridHtml += `</div>`;
+        grid += `</div>`;
 
-        wsDiv.innerHTML = `
-            <div class="flex justify-between items-center mb-3">
-                <h3 class="text-sm font-bold text-slate-600 uppercase">Design Box #${wsCount}</h3>
+        const div = document.createElement('div');
+        div.className = "bg-slate-50 rounded-lg border border-slate-200 p-4";
+        div.id = wsId;
+        div.innerHTML = `
+            <div class="flex justify-between items-center mb-2">
+                <h3 class="text-xs font-bold text-slate-500 uppercase">Box #${wsCount}</h3>
                 <div class="flex gap-2">
-                    <button onclick="copyWs('${wsId}')" class="text-xs bg-white border border-slate-300 hover:bg-slate-100 px-3 py-1 rounded text-slate-600 font-medium transition">Copy Seq</button>
-                    <button onclick="document.getElementById('${wsId}').remove()" class="text-xs text-red-400 hover:text-red-600 px-2">Remove</button>
+                    <button onclick="copyWs('${wsId}')" class="text-xs px-2 py-1 bg-white border rounded hover:bg-slate-100">Copy Result</button>
+                    <button onclick="document.getElementById('${wsId}').remove()" class="text-xs text-red-400 px-2">Remove</button>
                 </div>
             </div>
-            ${gridHtml}
+            ${grid}
         `;
-        
-        container.prepend(wsDiv); // Add new box to top
+        document.getElementById('workspaceContainer').prepend(div);
     }
-
-    function toggleMask(el) {
-        const charDiv = el.querySelector('.residue-char');
-        charDiv.classList.toggle('masked');
-    }
-
     function copyWs(id) {
-        const ws = document.getElementById(id);
-        let seq = "";
-        ws.querySelectorAll('.residue-box').forEach(box => {
-            const charDiv = box.querySelector('.residue-char');
-            seq += charDiv.classList.contains('masked') ? "_" : charDiv.innerText;
-        });
-        navigator.clipboard.writeText(seq);
-        
-        // Simple feedback
-        const btn = ws.querySelector('button');
-        const oldText = btn.innerText;
-        btn.innerText = "Copied!";
-        btn.classList.add('text-green-600', 'border-green-600');
-        setTimeout(() => {
-            btn.innerText = oldText;
-            btn.classList.remove('text-green-600', 'border-green-600');
-        }, 1500);
+        let s = "";
+        document.getElementById(id).querySelectorAll('.residue-char').forEach(c => s += c.classList.contains('masked') ? "_" : c.innerText);
+        navigator.clipboard.writeText(s);
+    }
+
+
+    // --- 3. RARE CODON LOGIC (Improved) ---
+    // Threshold < 10 per thousand (E. coli K12)
+    const rareCodons = {
+        'AGG':1.2, 'AGA':2.1, 'CGA':3.6, 'CGG':5.4, 'CTA':3.9, 'ATA':4.5, 'TGA':0.9, 'TAG':0.2,
+        'CCC':5.5, 'TGT':5.2, 'TGC':6.4, 'ACA':7.1, 'TCA':7.1, 'GGA':7.9, 'ACT':8.9
+    };
+
+    function analyzeCodons() {
+        const dna = document.getElementById('codonInput').value.replace(/[^ATGCatgc]/g, '').toUpperCase();
+        const visualBox = document.getElementById('codonVisual');
+        const reportBox = document.getElementById('codonReport');
+
+        if(!dna) {
+            visualBox.innerHTML = "<span class='text-slate-400'>Result will appear here...</span>";
+            reportBox.innerHTML = '<ul class="text-slate-500 text-xs"><li>No sequence loaded.</li></ul>';
+            return;
+        }
+
+        let visualHTML = "";
+        let rareListHTML = "";
+        let rareCount = 0;
+
+        for(let i=0; i < dna.length; i+=3) {
+            const codon = dna.substr(i, 3);
+            if(codon.length < 3) break;
+            
+            const position = (i/3) + 1; // Amino acid position
+            const isRare = rareCodons.hasOwnProperty(codon);
+            
+            if(isRare) {
+                // Rare Style
+                visualHTML += `<span class="codon-span codon-rare" title="Pos: ${position} | Freq: ${rareCodons[codon]}‰">${codon}</span> `;
+                rareListHTML += `<li class="flex justify-between border-b border-slate-100 py-1">
+                                    <span><span class="font-bold text-red-500">${codon}</span> at Pos <span class="font-bold">${position}</span></span>
+                                    <span class="text-slate-400 text-[10px]">${rareCodons[codon]}‰</span>
+                                 </li>`;
+                rareCount++;
+            } else {
+                // Normal Style
+                visualHTML += `<span class="codon-span text-slate-400 opacity-60">${codon}</span> `;
+            }
+        }
+
+        visualBox.innerHTML = visualHTML;
+        reportBox.innerHTML = rareCount > 0 
+            ? `<div class="text-xs font-bold text-red-600 mb-2">Found ${rareCount} rare codons</div><ul class="text-xs text-slate-600">${rareListHTML}</ul>`
+            : `<div class="text-green-600 font-bold text-xs mt-4 text-center">No rare codons found!</div>`;
     }
 </script>
 </body>
