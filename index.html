@@ -3,38 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V11 (Perfect UX)</title>
+    <title>Molecular Workbench V12 (Stable)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
         .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-        /* --- SMART INPUT SYSTEM --- */
-        .smart-input-container {
-            position: relative; width: 100%; height: 120px;
-            border: 1px solid #cbd5e1; border-radius: 8px; background: white; overflow: hidden;
-        }
-        .smart-input-container:focus-within {
-            border-color: #4f46e5; ring: 2px; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-        .smart-backdrop, .smart-textarea {
-            position: absolute; top: 0; left: 0; right: 0; bottom: 0; width: 100%; height: 100%;
-            padding: 12px; font-family: 'JetBrains Mono', monospace; font-size: 14px; line-height: 1.6;
-            white-space: pre-wrap; word-wrap: break-word; overflow: auto; margin: 0; border: none; outline: none; resize: none;
-        }
-        
-        /* Layer 1: The Colors */
-        .smart-backdrop { z-index: 1; color: transparent; pointer-events: none; background: transparent; }
-        
-        /* Layer 2: The Input & Selection */
-        .smart-textarea { z-index: 2; color: transparent; background: transparent; caret-color: black; }
-        
-        /* --- KEY FIX: VISIBLE SELECTION --- */
-        /* Make the selection background semi-transparent so the backdrop colors show through */
-        .smart-textarea::selection { background-color: rgba(99, 102, 241, 0.25); } 
-
-        /* Color Mapping */
+        /* Color Mapping for Outputs */
         .c-A { color: #16a34a; font-weight: bold; }
         .c-T { color: #dc2626; font-weight: bold; }
         .c-G { color: #d97706; font-weight: bold; }
@@ -78,9 +54,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v11.0</span>
+                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v12.0</span>
                 </h1>
-                <p class="text-slate-500 text-sm">Visual Selection • Line Numbers • Silent Copy</p>
+                <p class="text-slate-500 text-sm">Stable Inputs • No Glitches • Accurate Tools</p>
             </div>
             
             <nav class="flex gap-2">
@@ -97,14 +73,11 @@
             <div class="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <label class="block text-sm font-bold text-slate-700 mb-2">Forward Primer (5'➝3')</label>
-                    <div class="smart-input-container">
-                        <div id="fwdBackdrop" class="smart-backdrop"></div>
-                        <textarea id="fwdInput" class="smart-textarea" spellcheck="false" 
-                            placeholder="Paste Sequence..." 
-                            oninput="handleInput('fwd')" onscroll="syncScroll('fwd')" 
-                            onmouseup="checkSelect('fwd')" onkeyup="checkSelect('fwd')"></textarea>
-                    </div>
-                    <div id="fwdStatus" class="mt-1 text-xs text-slate-400 italic h-5">Highlight annealing part to check Tm...</div>
+                    <textarea id="fwdInput" class="w-full h-32 p-3 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm" 
+                        spellcheck="false" placeholder="Paste Sequence here..."
+                        onmouseup="checkSelect('fwd')" onkeyup="checkSelect('fwd')"></textarea>
+                    
+                    <div id="fwdStatus" class="mt-2 text-xs text-slate-500 italic h-5 border-l-2 border-indigo-200 pl-2">Highlight annealing part to check Tm...</div>
                 </div>
 
                 <div>
@@ -112,14 +85,11 @@
                         <label class="block text-sm font-bold text-slate-700">Reverse Primer (5'➝3')</label>
                         <button onclick="revCompTool()" class="text-[10px] bg-slate-100 px-2 rounded border hover:bg-indigo-50 hover:text-indigo-600">↺ RevComp Tool</button>
                     </div>
-                    <div class="smart-input-container">
-                        <div id="revBackdrop" class="smart-backdrop"></div>
-                        <textarea id="revInput" class="smart-textarea" spellcheck="false" 
-                            placeholder="Paste Sequence..." 
-                            oninput="handleInput('rev')" onscroll="syncScroll('rev')"
-                            onmouseup="checkSelect('rev')" onkeyup="checkSelect('rev')"></textarea>
-                    </div>
-                    <div id="revStatus" class="mt-1 text-xs text-slate-400 italic h-5">Highlight annealing part to check Tm...</div>
+                    <textarea id="revInput" class="w-full h-32 p-3 border border-slate-300 rounded focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 font-mono text-sm" 
+                        spellcheck="false" placeholder="Paste Sequence here..."
+                        onmouseup="checkSelect('rev')" onkeyup="checkSelect('rev')"></textarea>
+                    
+                    <div id="revStatus" class="mt-2 text-xs text-slate-500 italic h-5 border-l-2 border-indigo-200 pl-2">Highlight annealing part to check Tm...</div>
                 </div>
             </div>
 
@@ -210,20 +180,7 @@
             });
         }
 
-        // --- 1. PRIMER LOGIC ---
-        function handleInput(id) {
-            const input = document.getElementById(id+'Input');
-            const backdrop = document.getElementById(id+'Backdrop');
-            backdrop.innerHTML = colorizeHTML(input.value) + '<br>';
-        }
-
-        function syncScroll(id) {
-            const input = document.getElementById(id+'Input');
-            const backdrop = document.getElementById(id+'Backdrop');
-            backdrop.scrollTop = input.scrollTop;
-            backdrop.scrollLeft = input.scrollLeft;
-        }
-
+        // --- 1. PRIMER LOGIC (Stable) ---
         function calcHairpin(seq) {
             if(seq.length < 4) return 0;
             const s = seq.toUpperCase();
@@ -305,7 +262,6 @@
             document.getElementById('fwdInput').value = "";
             document.getElementById('revInput').value = "";
             document.getElementById('primerName').value = "";
-            handleInput('fwd'); handleInput('rev');
             document.getElementById('fwdStatus').innerHTML = "Highlight annealing part to check Tm...";
             document.getElementById('revStatus').innerHTML = "Highlight annealing part to check Tm...";
             curSel = { fwd: null, rev: null };
@@ -332,7 +288,6 @@
             const el = document.getElementById('revInput'); if(!el.value)return;
             const map = {'A':'T','T':'A','G':'C','C':'G','a':'t','t':'a','g':'c','c':'g'};
             el.value = el.value.split('').reverse().join('').replace(/[ATGCatgc]/g, b=>map[b]||b).toUpperCase();
-            handleInput('rev');
         }
 
         // --- 2. PROTEIN MASKING (Silent Copy) ---
@@ -361,7 +316,6 @@
                 s += charEl.classList.contains('masked') ? "_" : charEl.innerText;
             });
             navigator.clipboard.writeText(s).then(() => {
-                // Button Feedback (No Alert)
                 const btn = document.getElementById('copyBtn-'+id);
                 const originalText = btn.innerText;
                 btn.innerText = "✅ Copied!";
@@ -373,7 +327,7 @@
             });
         }
 
-        // --- 3. RARE CODON (With Line Numbers) ---
+        // --- 3. RARE CODON (Fixed Layout) ---
         function analyzeCodons() {
             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
             const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
@@ -381,22 +335,27 @@
             const max={}; Object.keys(map).forEach(c=>{ if(!max[map[c]] || freq[c]>max[map[c]]) max[map[c]]=freq[c]; });
             
             let html = "";
-            let codonsPerLine = 20; // 60 bp per line
-            
-            // Chunking
             let chunks = [];
-            for (let i = 0; i < dna.length; i += 3) {
-                chunks.push(dna.substr(i, 3));
-            }
-            
-            // Building Rows
-            for(let i=0; i < chunks.length; i += codonsPerLine) {
-                const rowCodons = chunks.slice(i, i + codonsPerLine);
+            for (let i = 0; i < dna.length; i += 3) chunks.push(dna.substr(i, 3));
+
+            for(let i=0; i < chunks.length; i += 20) {
+                const rowCodons = chunks.slice(i, i + 20);
                 const startPos = (i * 3) + 1;
                 
-                let rowHtml = `<div class="codon-row">`;
-                rowHtml += `<div class="codon-index">${startPos}</div>`; // Line Number
-                rowHtml += `<div class="codon-seq">`;
-                
+                let rowHtml = `<div class="codon-row"><div class="codon-index">${startPos}</div><div class="codon-seq">`;
                 rowCodons.forEach(c => {
-                    if(c.length < 3
+                    if(c.length < 3) return;
+                    const aa = map[c]||'?';
+                    const ratio = (freq[c]||0)/(max[aa]||1);
+                    const isRare = ratio < 0.1;
+                    rowHtml += `<span class="codon-span ${isRare ? 'codon-rare' : 'codon-ok'}" title="${aa} (${(ratio*100).toFixed(0)}%)">${c}</span>`;
+                });
+                rowHtml += `</div></div>`;
+                html += rowHtml;
+            }
+
+            document.getElementById('codonVisual').innerHTML = html || '<span class="text-slate-300 italic">Sequence map will appear here...</span>';
+        }
+    </script>
+</body>
+</html>
