@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V35 (Align Button Fix)</title>
+    <title>Molecular Workbench V36 (Button Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -82,7 +82,7 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">V35.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">V36.0</span>
             </h1>
         </div>
         <nav class="flex gap-2">
@@ -108,7 +108,7 @@ MKTIIALSYIFCLVFADYKSLG...
 >Mutant_Example
 MKTIIAL.......FADYK..."></textarea>
             
-            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">
+            <button type="button" onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">
                 Analyze
             </button>
             
@@ -194,22 +194,23 @@ MKTIIAL.......FADYK..."></textarea>
             });
         }
 
-        // --- 1. ALIGNMENT (RE-CODED FIX) ---
+        // --- 1. ALIGNMENT (FIXED: ATOMIC UPDATE) ---
         window.runAlign = function() {
-            // STEP 1: Clear everything first (Reset State)
-            const outDiv = document.getElementById('alnOutput');
-            outDiv.innerHTML = ''; 
-            document.getElementById('seqLen').innerText = '0';
-
-            // STEP 2: Get Input
+            // 1. Get Input
             const raw = document.getElementById('alnInput').value;
-            if(!raw || !raw.trim()) return; // Do nothing if empty (Standard behavior)
+            
+            // 2. Validate Input (Alert user if empty instead of just clearing output)
+            if(!raw || !raw.trim()) {
+                alert("⚠️ Please enter sequence data first.");
+                return; // Stop here. Do NOT clear the existing output.
+            }
 
-            // STEP 3: Parse (Fresh variables)
+            // 3. Prepare Variables (Local Scope)
             const lines = raw.split('\n');
             let seqs = []; 
             let curr = {n:'', s:''};
             
+            // 4. Parse
             lines.forEach(l => {
                 l = l.trim();
                 if(l.startsWith('>')) { 
@@ -222,17 +223,18 @@ MKTIIAL.......FADYK..."></textarea>
             });
             if(curr.n || curr.s) seqs.push(curr);
             
-            if(seqs.length === 0) return;
+            if(seqs.length === 0) {
+                alert("No valid sequences found.");
+                return;
+            }
 
-            // STEP 4: Render
+            // 5. Generate HTML (In Memory ONLY)
             const ref = seqs[0];
-            document.getElementById('seqLen').innerText = ref.s.length;
-            
             const width = 100; 
-            let html = `<div class="aln-container">`;
+            let newHTML = `<div class="aln-container">`;
 
             for(let i=0; i < ref.s.length; i += width) {
-                html += `<div class="aln-block">`;
+                newHTML += `<div class="aln-block">`;
                 
                 // Ref Row
                 let chunkRef = ref.s.substr(i, width);
@@ -243,7 +245,7 @@ MKTIIAL.......FADYK..."></textarea>
                     refHtml += `<span class="res-box" onmouseenter="showStat(${pos}, '${aa}', 'Ref')">${aa}</span>`;
                 }
 
-                html += `<div class="aln-row">
+                newHTML += `<div class="aln-row">
                             <div class="aln-name" title="${ref.n}">Ref</div>
                             <div class="aln-seq seq-ref">${refHtml}</div>
                          </div>`;
@@ -265,15 +267,19 @@ MKTIIAL.......FADYK..."></textarea>
 
                         vis += `<span class="res-box ${cssClass}" onmouseenter="showStat(${pos}, '${mc}', '${sObj.n}')">${text}</span>`;
                     }
-                    html += `<div class="aln-row">
+                    newHTML += `<div class="aln-row">
                                 <div class="aln-name" title="${sObj.n}">${sObj.n.substring(0,10)}</div>
                                 <div class="aln-seq">${vis}</div>
                              </div>`;
                 }
-                html += `</div>`;
+                newHTML += `</div>`;
             }
-            html += `</div>`;
-            outDiv.innerHTML = html;
+            newHTML += `</div>`;
+
+            // 6. SWAP (Atomic Update)
+            // Only now do we touch the DOM. This prevents flickering or empty states.
+            document.getElementById('seqLen').innerText = ref.s.length;
+            document.getElementById('alnOutput').innerHTML = newHTML;
         }
 
         window.showStat = function(pos, aa, name) {
@@ -335,7 +341,6 @@ MKTIIAL.......FADYK..."></textarea>
             if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
             let h = "";
             libraryList.forEach((seq, idx) => {
-                // Keep the "Copy by Index" safety logic
                 h += `<div class="list-card">
                     <div class="flex items-center gap-2 overflow-hidden">
                         <span class="text-slate-400 w-5 text-right font-mono">${idx+1}.</span>
