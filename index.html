@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V31 (Wide Align)</title>
+    <title>Molecular Workbench V32 (Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -16,31 +16,19 @@
         .nav-inactive { background: white; color: #64748b; border-color: #e2e8f0; }
         .nav-inactive:hover { background: #f1f5f9; color: #334155; }
 
-        /* ALIGNMENT (Wide & Hover) */
+        /* ALIGNMENT */
         .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; padding-bottom: 10px; }
         .aln-block { margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: max-content; }
-        
         .aln-row { display: flex; align-items: center; }
         .aln-name { width: 100px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #64748b; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
-        /* Residue Box */
         .res-box { 
-            width: 1ch; 
-            height: 24px; 
-            display: inline-flex; 
-            align-items: center; 
-            justify-content: center;
-            cursor: crosshair;
-            transition: all 0.05s;
+            width: 1ch; height: 24px; display: inline-flex; align-items: center; justify-content: center;
+            cursor: crosshair; transition: all 0.05s;
         }
         .res-box:hover {
-            background-color: #f59e0b; /* Amber */
-            color: white !important;
-            font-weight: bold;
-            transform: scale(1.3);
-            border-radius: 2px;
-            z-index: 50;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            background-color: #f59e0b; color: white !important; font-weight: bold;
+            transform: scale(1.3); border-radius: 2px; z-index: 50; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
         .c-mut { background-color: #fee2e2; color: #dc2626; }
@@ -56,11 +44,10 @@
             font-family: 'Roboto Mono', monospace;
             font-size: 12px; font-weight: bold;
             display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-            margin-bottom: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
 
-        /* MASKING & CODON (Original V28 Style) */
+        /* MASKING */
         .mask-grid-box { width: 32px; height: 38px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; transition: 0.1s; }
         .mask-grid-box:hover { border-color: #3b82f6; transform: translateY(-1px); }
         .mask-grid-box.active { background-color: #ef4444; border-color: #dc2626; color: white; }
@@ -68,9 +55,18 @@
         .mask-visual-container { height: 320px; display: flex; flex-direction: column; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
         .mask-list-scroll { flex: 1; overflow-y: auto; padding: 0; }
         
-        .list-card { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
-        .list-card:hover { background-color: #f8fafc; }
+        /* Revised List Card for Ready-to-Click Copy */
+        .list-card { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 12px; height: 40px; }
+        .list-card:hover { background-color: #f0f9ff; }
+        .btn-copy-ready {
+            background-color: #e2e8f0; color: #475569;
+            padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 10px;
+            border: 1px solid #cbd5e1; cursor: pointer; transition: 0.1s;
+        }
+        .btn-copy-ready:hover { background-color: #cbd5e1; color: #1e293b; }
+        .btn-copy-ready:active { transform: scale(0.95); }
 
+        /* CODON */
         .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; }
         .codon-rare { background: #fff1f2; border-color: #fda4af; }
     </style>
@@ -80,9 +76,9 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">V31.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">V32.0</span>
             </h1>
-            <p class="text-slate-500 text-xs mt-1">Wide View (100 Seq) | Sliding Generator</p>
+            <p class="text-slate-500 text-xs mt-1">Re-Run Fixed | Quick Copy Ready</p>
         </div>
         <nav class="flex gap-2">
             <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
@@ -107,7 +103,7 @@ MKTIIALSYIFCLVFADYKSLG...
 >Mutant_Example
 MKTIIAL.......FADYK..."></textarea>
             
-            <button id="btnRunAlign" onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95">Analyze Alignment</button>
+            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95">Analyze Alignment</button>
             
             <div id="alnOutput" class="mt-6"></div>
         </div>
@@ -132,17 +128,14 @@ MKTIIAL.......FADYK..."></textarea>
                 <div class="flex items-center gap-2">
                     <span class="text-sm font-bold text-indigo-900">⚡ Sliding Generator:</span>
                 </div>
-                
                 <div class="flex items-center gap-2">
                     <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Window Size</label>
                     <input id="winSize" value="3" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
                 </div>
-
                 <div class="flex items-center gap-2">
                     <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sliding Step</label>
                     <input id="stepSize" value="1" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
                 </div>
-
                 <button onclick="runAutoScan()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded font-bold ml-auto shadow-sm transition">Generate Lib</button>
             </div>
 
@@ -195,38 +188,40 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 1. ALIGNMENT (100 WIDTH, RE-RUNNABLE)
+        // 1. ALIGNMENT (RE-RUN FIXED)
         // ==========================================
         window.runAlign = function() {
-            // 1. Clear previous output
+            // 1. Force Clear DOM
             const outDiv = document.getElementById('alnOutput');
             outDiv.innerHTML = ''; 
 
             const raw = document.getElementById('alnInput').value;
-            if(!raw.trim()) return; // Don't run if empty
+            if(!raw.trim()) return;
 
-            // 2. Parse Input (Reset variables every run)
+            // 2. Local Scope Variables (Reset every click)
             const lines = raw.split('\n');
-            let seqs = [], curr = {n:'', s:''};
+            let seqs = []; 
+            let curr = {n:'', s:''};
             
+            // 3. Fresh Parsing
             lines.forEach(l => {
                 l = l.trim();
                 if(l.startsWith('>')) { 
-                    if(curr.n || curr.s) seqs.push(curr); // Push previous
+                    if(curr.n || curr.s) seqs.push(curr); 
                     curr={n:l.substring(1),s:''}; 
                 } else {
-                    if(!curr.n) curr.n = "Input_Seq"; // Handle missing header
+                    if(!curr.n) curr.n = "Input_Seq"; 
                     curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
                 }
             });
-            if(curr.n || curr.s) seqs.push(curr); // Push last
+            if(curr.n || curr.s) seqs.push(curr);
             
             if(seqs.length === 0) return;
 
             const ref = seqs[0];
             document.getElementById('seqLen').innerText = ref.s.length;
             
-            // 3. Render (Width = 100)
+            // 4. Render 100 Width
             const width = 100; 
             let html = `<div class="aln-container">`;
 
@@ -247,7 +242,7 @@ MKTIIAL.......FADYK..."></textarea>
                             <div class="aln-seq seq-ref">${refHtml}</div>
                          </div>`;
 
-                // Mutants
+                // Mutant Rows
                 for(let m=1; m<seqs.length; m++) {
                     let sObj = seqs[m];
                     let chunkMut = sObj.s.substr(i, width);
@@ -255,7 +250,7 @@ MKTIIAL.......FADYK..."></textarea>
                     for(let k=0; k<chunkMut.length; k++) {
                         let pos = i + k + 1;
                         let mc = chunkMut[k] || '';
-                        let rc = chunkRef[k] || ''; // compare to ref at same index
+                        let rc = chunkRef[k] || ''; 
                         let cssClass = "", text = "";
 
                         if(mc===rc && mc!=='-') { cssClass="c-match"; text="."; }
@@ -288,7 +283,7 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 2. MASKING (V28 Logic + New UI)
+        // 2. MASKING (VISIBLE COPY BUTTON)
         // ==========================================
         window.renderGrid = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
@@ -336,12 +331,13 @@ MKTIIAL.......FADYK..."></textarea>
             if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
             let h = "";
             libraryList.forEach((seq, idx) => {
-                h += `<div class="list-card group">
-                    <div class="flex items-center gap-2">
+                // FIXED: Always visible Copy button
+                h += `<div class="list-card">
+                    <div class="flex items-center gap-2 overflow-hidden">
                         <span class="text-slate-400 w-5 text-right font-mono">${idx+1}.</span>
-                        <span class="text-slate-700 font-mono font-bold tracking-wider">${seq}</span>
+                        <span class="text-slate-700 font-mono font-bold tracking-wider truncate">${seq}</span>
                     </div>
-                    <button onclick="copyOne('${seq}', this)" class="opacity-0 group-hover:opacity-100 bg-slate-100 hover:bg-slate-200 text-slate-600 px-2 py-1 rounded text-[10px] border border-slate-300 transition">Copy</button>
+                    <button onclick="copyOne('${seq}', this)" class="btn-copy-ready">Copy</button>
                 </div>`;
             });
             con.innerHTML = h;
@@ -349,8 +345,15 @@ MKTIIAL.......FADYK..."></textarea>
 
         window.copyOne = function(txt, btn) {
             navigator.clipboard.writeText(txt);
-            btn.innerText="✓"; btn.classList.remove('opacity-0');
-            setTimeout(()=>{ btn.innerText="Copy"; btn.classList.add('opacity-0'); }, 1000);
+            let prev = btn.innerText;
+            btn.innerText="Copied!";
+            btn.style.backgroundColor = "#22c55e"; // Green
+            btn.style.color = "white";
+            setTimeout(()=>{ 
+                btn.innerText="Copy"; 
+                btn.style.backgroundColor = ""; // Reset
+                btn.style.color = ""; 
+            }, 1000);
         }
         window.clearList = function() { libraryList=[]; updateList(); }
         window.copyRaw = function() {
