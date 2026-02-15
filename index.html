@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V34 (Solid)</title>
+    <title>Molecular Workbench V35 (Align Button Fix)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -16,12 +16,13 @@
         .nav-inactive { background: white; color: #64748b; border-color: #e2e8f0; }
         .nav-inactive:hover { background: #f1f5f9; color: #334155; }
 
-        /* ALIGNMENT */
+        /* ALIGNMENT STYLE */
         .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; padding-bottom: 10px; }
         .aln-block { margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: max-content; }
         .aln-row { display: flex; align-items: center; }
         .aln-name { width: 100px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #64748b; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
+        /* Centered Residue Box */
         .res-box { 
             width: 16px; height: 26px; 
             display: inline-flex; align-items: center; justify-content: center;
@@ -47,7 +48,7 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
 
-        /* MASKING */
+        /* MASKING STYLE */
         .mask-grid-box { 
             width: 34px; height: 40px; 
             border: 1px solid #e2e8f0; 
@@ -71,7 +72,7 @@
         .btn-copy-ready:hover { background-color: #cbd5e1; color: #1e293b; }
         .btn-copy-ready:active { transform: scale(0.95); }
 
-        /* CODON */
+        /* CODON STYLE */
         .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .codon-rare { background: #fff1f2; border-color: #fda4af; }
     </style>
@@ -81,9 +82,8 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-orange-600 text-white px-2 py-1 rounded">V34.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">V35.0</span>
             </h1>
-            <p class="text-slate-500 text-xs mt-1">Bug-Free Edition | Pre-filled Data</p>
         </div>
         <nav class="flex gap-2">
             <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
@@ -102,19 +102,15 @@
                 <span class="text-slate-400 font-normal text-[10px] uppercase">Ref Length: <span id="seqLen" class="text-white">0</span></span>
             </div>
 
-            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4 mt-4 focus:ring-2 focus:ring-blue-500 outline-none" spellcheck="false">>Reference_Seq
-MKTIIALSYIFCLVFADYKSLG
->Mutant_A (Point Mut)
-MKTIIALSYIFCLAFADYKSLG
->Mutant_B (Deletion)
-MKTIIAL-------FADYKSLG</textarea>
+            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4 mt-4 focus:ring-2 focus:ring-blue-500 outline-none" 
+placeholder=">Reference_Seq
+MKTIIALSYIFCLVFADYKSLG...
+>Mutant_Example
+MKTIIAL.......FADYK..."></textarea>
             
-            <div class="flex items-center gap-3">
-                <button id="btnRunAlign" onclick="safeRunAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">
-                    Analyze Alignment
-                </button>
-                <button onclick="document.getElementById('alnInput').value=''" class="text-slate-400 text-xs underline hover:text-slate-600">Clear Input</button>
-            </div>
+            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">
+                Analyze
+            </button>
             
             <div id="alnOutput" class="mt-6"></div>
         </div>
@@ -198,38 +194,18 @@ MKTIIAL-------FADYKSLG</textarea>
             });
         }
 
-        // --- 1. ALIGNMENT (FIXED) ---
-        window.safeRunAlign = function() {
-            const raw = document.getElementById('alnInput').value;
-            // CHECK 1: Empty Input?
-            if(!raw || !raw.trim()) {
-                alert("⚠️ Please enter protein sequences first!\n(Ex: >Name\nSEQ...)");
-                return;
-            }
-
-            const btn = document.getElementById('btnRunAlign');
-            const originalText = btn.innerHTML;
-            
-            // Visual Feedback
-            btn.innerHTML = `<span class="animate-pulse">Processing...</span>`;
-            
-            // Force delay to let UI update
-            setTimeout(() => {
-                try {
-                    runAlign(raw);
-                } catch(e) {
-                    console.error(e);
-                    alert("Error processing: " + e.message);
-                } finally {
-                    btn.innerHTML = "Analyze Alignment"; // Reset Text
-                }
-            }, 200);
-        }
-
-        window.runAlign = function(raw) {
+        // --- 1. ALIGNMENT (RE-CODED FIX) ---
+        window.runAlign = function() {
+            // STEP 1: Clear everything first (Reset State)
             const outDiv = document.getElementById('alnOutput');
             outDiv.innerHTML = ''; 
+            document.getElementById('seqLen').innerText = '0';
 
+            // STEP 2: Get Input
+            const raw = document.getElementById('alnInput').value;
+            if(!raw || !raw.trim()) return; // Do nothing if empty (Standard behavior)
+
+            // STEP 3: Parse (Fresh variables)
             const lines = raw.split('\n');
             let seqs = []; 
             let curr = {n:'', s:''};
@@ -240,27 +216,25 @@ MKTIIAL-------FADYKSLG</textarea>
                     if(curr.n || curr.s) seqs.push(curr); 
                     curr={n:l.substring(1),s:''}; 
                 } else {
-                    if(!curr.n && seqs.length===0) curr.n = "Reference"; // Handle 1st line no header
+                    if(!curr.n) curr.n = "Input_Seq"; 
                     curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
                 }
             });
             if(curr.n || curr.s) seqs.push(curr);
             
-            if(seqs.length === 0) {
-                 outDiv.innerHTML = '<p class="text-red-500 text-sm">No valid sequences found.</p>';
-                 return;
-            }
+            if(seqs.length === 0) return;
 
+            // STEP 4: Render
             const ref = seqs[0];
             document.getElementById('seqLen').innerText = ref.s.length;
             
             const width = 100; 
-            let html = `<div class="aln-container animate-fade-in">`; // Added fade-in class idea (if CSS supported, but plain logic ok)
+            let html = `<div class="aln-container">`;
 
             for(let i=0; i < ref.s.length; i += width) {
                 html += `<div class="aln-block">`;
                 
-                // Ref
+                // Ref Row
                 let chunkRef = ref.s.substr(i, width);
                 let refHtml = "";
                 for(let k=0; k<chunkRef.length; k++) {
@@ -274,7 +248,7 @@ MKTIIAL-------FADYKSLG</textarea>
                             <div class="aln-seq seq-ref">${refHtml}</div>
                          </div>`;
 
-                // Mutants
+                // Mutant Rows
                 for(let m=1; m<seqs.length; m++) {
                     let sObj = seqs[m];
                     let chunkMut = sObj.s.substr(i, width);
@@ -314,7 +288,7 @@ MKTIIAL-------FADYKSLG</textarea>
             `;
         }
 
-        // --- 2. MASKING (FIXED COPY) ---
+        // --- 2. MASKING ---
         window.renderGrid = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
             const container = document.getElementById('gridContainer');
@@ -361,7 +335,7 @@ MKTIIAL-------FADYKSLG</textarea>
             if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
             let h = "";
             libraryList.forEach((seq, idx) => {
-                // FIXED: Use Data-Index to avoid Quote Bugs
+                // Keep the "Copy by Index" safety logic
                 h += `<div class="list-card">
                     <div class="flex items-center gap-2 overflow-hidden">
                         <span class="text-slate-400 w-5 text-right font-mono">${idx+1}.</span>
