@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V16 (Full Suite Masking)</title>
+    <title>Pa1oLAB Workbench V16 </title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -51,9 +51,9 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v16.0</span>
+                    🧬 Pa1oLAB Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v16.0</span>
                 </h1>
-                <p class="text-slate-500 text-sm">New: Inverse, Target & Random Masking</p>
+                <p class="text-slate-500 text-sm">© watta17s</p>
             </div>
             <nav class="flex gap-2">
                 <button onclick="switchTab('primer')" id="btn-primer" class="tab-btn tab-inactive px-6 py-2 rounded-lg text-sm font-bold">Primer</button>
@@ -65,13 +65,13 @@
 
     <main id="content-primer" class="tool-content hidden">
          <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col items-center justify-center text-slate-400 italic">
-            (Primer Design Module - Same as V15)
+            (Primer Design Module - Coming Soon!)
          </div>
     </main>
 
     <main id="content-protein" class="tool-content">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-4">🎭 Protein Masking Suite</h2>
+            <h2 class="text-xl font-bold text-slate-800 mb-4">🎭 Protein Masking Suite for ESM3</h2>
             
             <div class="mb-6">
                 <label class="text-xs font-bold text-slate-500 uppercase mb-1 block">Input Sequence (AA)</label>
@@ -83,7 +83,7 @@
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 
                 <div class="border border-indigo-100 bg-indigo-50/50 p-3 rounded-lg flex flex-col">
-                    <h3 class="text-xs font-bold text-indigo-900 mb-2 uppercase">📍 1. Sliding Window</h3>
+                    <h3 class="text-xs font-bold text-indigo-900 mb-2 uppercase">📍 Sliding Window</h3>
                     <div class="flex gap-1 mb-2">
                         <input type="number" id="slideSize" placeholder="Size" value="3" class="w-1/2 p-1 text-xs border rounded">
                         <input type="number" id="slideStep" placeholder="Step" value="1" class="w-1/2 p-1 text-xs border rounded">
@@ -92,7 +92,7 @@
                 </div>
 
                 <div class="border border-purple-100 bg-purple-50/50 p-3 rounded-lg flex flex-col">
-                    <h3 class="text-xs font-bold text-purple-900 mb-2 uppercase">🔦 2. Inverse (Spotlight)</h3>
+                    <h3 class="text-xs font-bold text-purple-900 mb-2 uppercase">🔦 Inverse</h3>
                     <div class="flex gap-1 mb-2">
                         <input type="number" id="invSize" placeholder="Keep Size" value="5" class="w-full p-1 text-xs border rounded">
                     </div>
@@ -101,7 +101,7 @@
 
                 <div class="border border-slate-200 bg-slate-50 p-3 rounded-lg flex flex-col gap-2">
                     <div>
-                        <h3 class="text-xs font-bold text-slate-700 mb-1 uppercase">⚡ 3. Periodic / Target</h3>
+                        <h3 class="text-xs font-bold text-slate-700 mb-1 uppercase">⚡ Periodic / Target</h3>
                         <div class="flex gap-1">
                             <input type="number" id="periodN" placeholder="Every N" value="2" class="w-1/2 p-1 text-xs border rounded">
                             <button onclick="genPeriodic()" class="flex-1 py-1 bg-slate-700 text-white text-[10px] font-bold rounded">Zipper</button>
@@ -115,7 +115,7 @@
 
                 <div class="border border-slate-200 bg-slate-50 p-3 rounded-lg flex flex-col gap-2">
                     <div>
-                        <h3 class="text-xs font-bold text-slate-700 mb-1 uppercase">🎲 4. Random / Manual</h3>
+                        <h3 class="text-xs font-bold text-slate-700 mb-1 uppercase">🎲 Random / Manual</h3>
                         <div class="flex gap-1">
                             <input type="number" id="randN" placeholder="# Count" value="3" class="w-1/2 p-1 text-xs border rounded">
                             <button onclick="genRandom()" class="flex-1 py-1 bg-orange-600 text-white text-[10px] font-bold rounded">Random</button>
