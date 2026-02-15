@@ -3,27 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V30 (Hover Only)</title>
+    <title>Molecular Workbench V31 (Wide Align)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #334155; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
         .font-mono { font-family: 'Roboto Mono', monospace; }
 
-        /* TABS */
-        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid transparent; }
+        /* NAV */
+        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
         .nav-active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .nav-inactive { background: white; color: #64748b; border-color: #e2e8f0; }
-        .nav-inactive:hover { background: #f8fafc; }
+        .nav-inactive:hover { background: #f1f5f9; color: #334155; }
 
-        /* ALIGNMENT STYLE */
-        .aln-container { font-family: 'Roboto Mono', monospace; font-size: 14px; line-height: 1.8; white-space: pre; overflow-x: auto; }
-        .aln-block { margin-bottom: 16px; background: white; padding: 16px; border-radius: 8px; border: 1px solid #cbd5e1; }
+        /* ALIGNMENT (Wide & Hover) */
+        .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; padding-bottom: 10px; }
+        .aln-block { margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: max-content; }
         
         .aln-row { display: flex; align-items: center; }
-        .aln-name { width: 90px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #64748b; font-size: 11px; overflow: hidden; text-overflow: ellipsis; }
+        .aln-name { width: 100px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #64748b; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
-        /* Residue Box for Hover */
+        /* Residue Box */
         .res-box { 
             width: 1ch; 
             height: 24px; 
@@ -31,16 +31,15 @@
             align-items: center; 
             justify-content: center;
             cursor: crosshair;
-            position: relative;
             transition: all 0.05s;
         }
         .res-box:hover {
-            background-color: #f59e0b; /* Amber highlight */
+            background-color: #f59e0b; /* Amber */
             color: white !important;
             font-weight: bold;
             transform: scale(1.3);
             border-radius: 2px;
-            z-index: 10;
+            z-index: 50;
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         }
 
@@ -49,22 +48,21 @@
         .c-gap { color: #94a3b8; }
         .seq-ref .res-box { font-weight: bold; color: #0f172a; border-bottom: 1px dashed #e2e8f0; }
 
-        /* STATUS BAR (Sticky) */
+        /* STATUS BAR */
         .status-bar {
-            position: sticky; top: 0; z-index: 50;
+            position: sticky; top: 0; z-index: 40;
             background: #1e293b; color: #fbbf24;
             padding: 8px 16px; border-radius: 8px;
             font-family: 'Roboto Mono', monospace;
-            font-size: 13px; font-weight: bold;
-            display: flex; justify-content: space-between;
-            align-items: center;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            margin-bottom: 10px;
+            font-size: 12px; font-weight: bold;
+            display: flex; justify-content: space-between; align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            margin-bottom: 15px;
         }
 
-        /* MASKING STYLE (Restored) */
-        .mask-grid-box { width: 32px; height: 38px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; }
-        .mask-grid-box:hover { border-color: #3b82f6; }
+        /* MASKING & CODON (Original V28 Style) */
+        .mask-grid-box { width: 32px; height: 38px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; transition: 0.1s; }
+        .mask-grid-box:hover { border-color: #3b82f6; transform: translateY(-1px); }
         .mask-grid-box.active { background-color: #ef4444; border-color: #dc2626; color: white; }
 
         .mask-visual-container { height: 320px; display: flex; flex-direction: column; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
@@ -73,7 +71,6 @@
         .list-card { padding: 8px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 12px; }
         .list-card:hover { background-color: #f8fafc; }
 
-        /* CODON STYLE (Restored) */
         .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; }
         .codon-rare { background: #fff1f2; border-color: #fda4af; }
     </style>
@@ -83,9 +80,9 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-slate-800 text-white px-2 py-1 rounded">V30.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">V31.0</span>
             </h1>
-            <p class="text-slate-500 text-xs mt-1">Hover Only (No Ruler) | Original Mask & Rare Codon</p>
+            <p class="text-slate-500 text-xs mt-1">Wide View (100 Seq) | Sliding Generator</p>
         </div>
         <nav class="flex gap-2">
             <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
@@ -99,17 +96,19 @@
             
             <div class="status-bar" id="alignStatus">
                 <div class="flex items-center gap-4">
-                    <span>🖱️ Point at sequence...</span>
+                    <span>🖱️ Hover residue...</span>
                 </div>
-                <span class="text-slate-400 font-normal text-xs">Total Length: <span id="seqLen">0</span></span>
+                <span class="text-slate-400 font-normal text-[10px] uppercase">Ref Length: <span id="seqLen" class="text-white">0</span></span>
             </div>
 
             <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4 mt-4 focus:ring-2 focus:ring-blue-500 outline-none" 
-placeholder=">Ref
+placeholder=">Reference_Seq
 MKTIIALSYIFCLVFADYKSLG...
->Mutant_1
+>Mutant_Example
 MKTIIAL.......FADYK..."></textarea>
-            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition">Analyze</button>
+            
+            <button id="btnRunAlign" onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95">Analyze Alignment</button>
+            
             <div id="alnOutput" class="mt-6"></div>
         </div>
     </main>
@@ -119,27 +118,38 @@ MKTIIAL.......FADYK..."></textarea>
             <h2 class="text-lg font-bold text-slate-800 mb-4">🎭 Masking Generator</h2>
 
             <div class="mb-6">
-                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2 focus:outline-none focus:border-blue-500" placeholder="Protein Sequence..." oninput="renderGrid()">
+                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2 focus:outline-none focus:border-blue-500" placeholder="Paste Protein Sequence..." oninput="renderGrid()">
                 <div id="gridContainer" class="flex flex-wrap gap-1 p-3 bg-slate-50 border rounded max-h-48 overflow-y-auto">
-                    <span class="text-xs text-slate-400 m-auto">Enter sequence to see grid</span>
+                    <span class="text-xs text-slate-400 m-auto">Sequence Grid Preview</span>
                 </div>
                 <div class="flex gap-2 mt-2">
-                    <button onclick="addCurrentSelection()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-4 py-2 rounded font-bold">Add Selected</button>
-                    <button onclick="clearGrid()" class="text-red-500 text-xs hover:underline ml-auto self-center">Reset Grid</button>
+                    <button onclick="addCurrentSelection()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-4 py-2 rounded font-bold">Add Manually Selected</button>
+                    <button onclick="clearGrid()" class="text-red-500 text-xs hover:underline ml-auto self-center">Clear Selection</button>
                 </div>
             </div>
 
-            <div class="bg-blue-50 p-3 rounded border border-blue-100 mb-6 flex flex-wrap gap-2 items-center">
-                <span class="text-xs font-bold text-blue-800">Auto:</span>
-                <input id="winSize" value="3" class="w-10 text-center text-xs p-1 border rounded" placeholder="W">
-                <input id="stepSize" value="1" class="w-10 text-center text-xs p-1 border rounded" placeholder="S">
-                <button onclick="runAutoScan()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded font-bold ml-auto">Generate</button>
+            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-wrap gap-4 items-center shadow-sm">
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-bold text-indigo-900">⚡ Sliding Generator:</span>
+                </div>
+                
+                <div class="flex items-center gap-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Window Size</label>
+                    <input id="winSize" value="3" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sliding Step</label>
+                    <input id="stepSize" value="1" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
+                </div>
+
+                <button onclick="runAutoScan()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded font-bold ml-auto shadow-sm transition">Generate Lib</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="flex flex-col h-[320px]">
                     <div class="flex justify-between mb-1">
-                        <label class="text-xs font-bold text-slate-500">All Sequences</label>
+                        <label class="text-xs font-bold text-slate-500">Plain Text Output</label>
                         <button onclick="copyRaw()" id="btnCopyRaw" class="text-xs text-green-600 font-bold hover:underline">Copy All</button>
                     </div>
                     <textarea id="maskRaw" class="flex-1 p-3 border border-slate-200 rounded font-mono text-xs resize-none bg-slate-50 focus:outline-none" readonly></textarea>
@@ -147,12 +157,12 @@ MKTIIAL.......FADYK..."></textarea>
 
                 <div class="flex flex-col h-[320px]">
                     <div class="flex justify-between mb-1">
-                        <label class="text-xs font-bold text-slate-500">Individual List (<span id="libCount">0</span>)</label>
-                        <button onclick="clearList()" class="text-xs text-red-400 font-bold hover:text-red-600">Clear</button>
+                        <label class="text-xs font-bold text-slate-500">Library List (<span id="libCount">0</span>)</label>
+                        <button onclick="clearList()" class="text-xs text-red-400 font-bold hover:text-red-600">Clear All</button>
                     </div>
                     <div class="mask-visual-container">
                         <div id="maskListScroll" class="mask-list-scroll">
-                            <div class="text-center text-slate-300 text-xs mt-10">List Empty</div>
+                            <div class="text-center text-slate-300 text-xs mt-10">Empty</div>
                         </div>
                     </div>
                 </div>
@@ -166,7 +176,7 @@ MKTIIAL.......FADYK..."></textarea>
                 <h2 class="text-lg font-bold text-slate-800">🦠 Rare Codon Map</h2>
                 <span class="bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold border border-yellow-400">Ref: E. coli K12</span>
             </div>
-            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm uppercase h-24 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="PASTE DNA..." oninput="analyzeCodons()"></textarea>
+            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm uppercase h-24 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="PASTE DNA SEQUENCE HERE..." oninput="analyzeCodons()"></textarea>
             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
                 <div id="codonGrid" class="grid grid-cols-8 md:grid-cols-12 gap-2"></div>
             </div>
@@ -174,44 +184,56 @@ MKTIIAL.......FADYK..."></textarea>
     </main>
 
     <script>
-        // --- GLOBAL & NAV ---
+        // --- NAV ---
         let libraryList = [];
         window.switchTab = function(id) {
             document.querySelectorAll('.tool-view').forEach(e => e.classList.add('hidden'));
             document.getElementById('view-'+id).classList.remove('hidden');
             ['align','mask','codon'].forEach(k => {
-                const btn = document.getElementById('btn-'+k);
-                btn.className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
+                document.getElementById('btn-'+k).className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
             });
         }
 
         // ==========================================
-        // 1. ALIGNMENT (HOVER ONLY - NO RULER)
+        // 1. ALIGNMENT (100 WIDTH, RE-RUNNABLE)
         // ==========================================
         window.runAlign = function() {
+            // 1. Clear previous output
+            const outDiv = document.getElementById('alnOutput');
+            outDiv.innerHTML = ''; 
+
             const raw = document.getElementById('alnInput').value;
+            if(!raw.trim()) return; // Don't run if empty
+
+            // 2. Parse Input (Reset variables every run)
             const lines = raw.split('\n');
             let seqs = [], curr = {n:'', s:''};
             
             lines.forEach(l => {
                 l = l.trim();
-                if(l.startsWith('>')) { if(curr.n) seqs.push(curr); curr={n:l.substring(1),s:''}; }
-                else curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
+                if(l.startsWith('>')) { 
+                    if(curr.n || curr.s) seqs.push(curr); // Push previous
+                    curr={n:l.substring(1),s:''}; 
+                } else {
+                    if(!curr.n) curr.n = "Input_Seq"; // Handle missing header
+                    curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
+                }
             });
-            if(curr.n) seqs.push(curr);
+            if(curr.n || curr.s) seqs.push(curr); // Push last
+            
             if(seqs.length === 0) return;
 
             const ref = seqs[0];
             document.getElementById('seqLen').innerText = ref.s.length;
-            const width = 50; 
+            
+            // 3. Render (Width = 100)
+            const width = 100; 
             let html = `<div class="aln-container">`;
 
             for(let i=0; i < ref.s.length; i += width) {
                 html += `<div class="aln-block">`;
                 
-                // NO RULER ROW HERE
-
-                // Reference Row
+                // Ref Row
                 let chunkRef = ref.s.substr(i, width);
                 let refHtml = "";
                 for(let k=0; k<chunkRef.length; k++) {
@@ -225,7 +247,7 @@ MKTIIAL.......FADYK..."></textarea>
                             <div class="aln-seq seq-ref">${refHtml}</div>
                          </div>`;
 
-                // Mutants Rows
+                // Mutants
                 for(let m=1; m<seqs.length; m++) {
                     let sObj = seqs[m];
                     let chunkMut = sObj.s.substr(i, width);
@@ -233,9 +255,8 @@ MKTIIAL.......FADYK..."></textarea>
                     for(let k=0; k<chunkMut.length; k++) {
                         let pos = i + k + 1;
                         let mc = chunkMut[k] || '';
-                        let rc = chunkRef[k] || '';
-                        let cssClass = "";
-                        let text = "";
+                        let rc = chunkRef[k] || ''; // compare to ref at same index
+                        let cssClass = "", text = "";
 
                         if(mc===rc && mc!=='-') { cssClass="c-match"; text="."; }
                         else if(mc==='-') { cssClass="c-gap"; text="-"; }
@@ -244,23 +265,22 @@ MKTIIAL.......FADYK..."></textarea>
                         vis += `<span class="res-box ${cssClass}" onmouseenter="showStat(${pos}, '${mc}', '${sObj.n}')">${text}</span>`;
                     }
                     html += `<div class="aln-row">
-                                <div class="aln-name" title="${sObj.n}">${sObj.n.substring(0,8)}</div>
+                                <div class="aln-name" title="${sObj.n}">${sObj.n.substring(0,10)}</div>
                                 <div class="aln-seq">${vis}</div>
                              </div>`;
                 }
                 html += `</div>`;
             }
             html += `</div>`;
-            document.getElementById('alnOutput').innerHTML = html;
+            outDiv.innerHTML = html;
         }
 
         window.showStat = function(pos, aa, name) {
             const bar = document.getElementById('alignStatus');
             let displayAA = aa === '.' ? 'Match' : aa;
-            
             bar.innerHTML = `
                 <div class="flex items-center gap-4">
-                    <span class="bg-blue-600 text-white px-2 py-1 rounded text-xs">POS: ${pos}</span>
+                    <span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">POS: ${pos}</span>
                     <span class="text-white">RESIDUE: <span class="text-yellow-400 text-lg font-bold">${displayAA}</span></span>
                     <span class="text-slate-400 text-xs border-l border-slate-600 pl-4">Seq: ${name}</span>
                 </div>
@@ -268,12 +288,12 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 2. MASKING (RESTORED V28)
+        // 2. MASKING (V28 Logic + New UI)
         // ==========================================
         window.renderGrid = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
             const container = document.getElementById('gridContainer');
-            if(!seq) { container.innerHTML = `<span class="text-xs text-slate-400 m-auto">Enter sequence...</span>`; return; }
+            if(!seq) { container.innerHTML = `<span class="text-xs text-slate-400 m-auto">Enter sequence to see grid</span>`; return; }
             let h = "";
             for(let i=0; i<seq.length; i++) {
                 h += `<div class="mask-grid-box" id="mb-${i}" onclick="toggleBox(${i})">
@@ -313,9 +333,7 @@ MKTIIAL.......FADYK..."></textarea>
             document.getElementById('maskRaw').value = libraryList.join('\n');
             document.getElementById('libCount').innerText = libraryList.length;
             const con = document.getElementById('maskListScroll');
-            
-            if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">List Empty</div>`; return; }
-
+            if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
             let h = "";
             libraryList.forEach((seq, idx) => {
                 h += `<div class="list-card group">
@@ -343,7 +361,7 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 3. RARE CODON (RESTORED V28)
+        // 3. RARE CODON
         // ==========================================
         window.analyzeCodons = function() {
             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
