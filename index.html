@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V18 (Multi-Align Dot View)</title>
+    <title>Molecular Workbench V19 (Unified)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -15,20 +15,36 @@
         .tab-active { background-color: #4f46e5; color: white; box-shadow: 0 2px 4px rgba(79, 70, 229, 0.3); }
         .tab-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
 
-        /* Alignment Specific Styles */
-        .aln-container { overflow-x: auto; white-space: pre; font-size: 13px; line-height: 1.5; }
-        .aln-name { display: inline-block; width: 120px; color: #64748b; font-weight: bold; font-size: 11px; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; }
-        .aln-seq { display: inline-block; }
-        
-        .char-dot { color: #cbd5e1; font-weight: normal; } /* The dot */
-        .char-mut { color: #dc2626; font-weight: bold; background-color: #fef2f2; } /* Mutation */
-        .char-gap { color: #94a3b8; } /* Dash */
-        .char-ref { color: #334155; font-weight: bold; } /* Reference chars */
+        /* ALIGNMENT STYLES */
+        .aln-block { margin-bottom: 24px; font-size: 12px; line-height: 1.6; }
+        .aln-row { display: flex; align-items: center; }
+        .aln-label { width: 100px; color: #64748b; font-weight: bold; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: right; padding-right: 12px; flex-shrink: 0; }
+        .aln-seq-container { display: flex; align-items: center; font-family: 'JetBrains Mono', monospace; }
+        .aln-idx { color: #94a3b8; font-size: 10px; width: 30px; text-align: center; user-select: none; }
+        .aln-seq { letter-spacing: 1px; }
 
-        /* Standard Helpers */
+        /* Dot View Colors */
+        .c-dot { color: #cbd5e1; font-weight: normal; }
+        .c-mut { color: #dc2626; font-weight: bold; background-color: #fef2f2; }
+        .c-gap { color: #94a3b8; }
+        .c-ref { color: #334155; font-weight: bold; }
+
+        /* MASKING STYLES */
         .residue-box { width: 24px; margin: 2px; cursor: pointer; display: flex; flex-direction: column; align-items: center; }
-        .residue-char { font-size: 1rem; font-weight: 700; width: 100%; text-align: center; border-radius: 4px; background: #e2e8f0; color: #334155; }
+        .residue-char { font-size: 1rem; font-weight: 700; width: 100%; text-align: center; border-radius: 4px; background: #e2e8f0; color: #334155; transition: 0.1s; }
+        .residue-char:hover { transform: scale(1.1); z-index: 10; }
         .residue-char.masked { background-color: #ef4444; color: white; opacity: 0.5; }
+        .residue-num { font-size: 0.6rem; color: #94a3b8; }
+
+        /* RARE CODON STYLES */
+        .codon-grid { display: flex; flex-wrap: wrap; gap: 4px; }
+        .codon-box { width: 38px; height: 52px; background: white; border: 1px solid #e2e8f0; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .codon-box.is-rare { background-color: #fee2e2; border-color: #fca5a5; }
+        .codon-box.is-rare .cb-seq { color: #b91c1c; font-weight: bold; }
+        .cb-aa { font-size: 10px; font-weight: bold; color: #64748b; line-height: 1; }
+        .cb-seq { font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #334155; line-height: 1; }
+        .cb-pos { font-size: 9px; color: #94a3b8; margin-top: 2px; line-height: 1; }
+        .is-rare .cb-aa { color: #ef4444; } .is-rare .cb-pos { color: #f87171; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
@@ -37,171 +53,157 @@
         <div class="flex flex-col md:flex-row justify-between items-center gap-4">
             <div>
                 <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v18.0</span>
+                    🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v19.0</span>
                 </h1>
-                <p class="text-slate-500 text-sm">New: Multi-FASTA Alignment with Dot View</p>
+                <p class="text-slate-500 text-sm">Unified Tool: Alignment (Positions), Masking & Rare Codons</p>
             </div>
-            <nav class="flex gap-2 overflow-x-auto">
-                <button onclick="switchTab('align')" id="btn-align" class="tab-btn tab-active px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">Multi-Align</button>
-                <button onclick="switchTab('protein')" id="btn-protein" class="tab-btn tab-inactive px-4 py-2 rounded-lg text-sm font-bold whitespace-nowrap">Masking</button>
+            <nav class="flex gap-2">
+                <button onclick="switchTab('align')" id="btn-align" class="tab-btn tab-active px-5 py-2 rounded-lg text-sm font-bold">Alignment</button>
+                <button onclick="switchTab('mask')" id="btn-mask" class="tab-btn tab-inactive px-5 py-2 rounded-lg text-sm font-bold">Masking</button>
+                <button onclick="switchTab('codon')" id="btn-codon" class="tab-btn tab-inactive px-5 py-2 rounded-lg text-sm font-bold">Rare Codon</button>
             </nav>
         </div>
     </header>
 
     <main id="content-align" class="tool-content">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-2">⛓️ Mutant Alignment (Reference vs Mutants)</h2>
-            <p class="text-xs text-slate-500 mb-4">Paste multiple sequences in FASTA format. The <strong>first sequence</strong> will be used as the Reference (WT).</p>
+            <h2 class="text-xl font-bold text-slate-800 mb-2">⛓️ Multi-Sequence Alignment</h2>
+            <p class="text-xs text-slate-500 mb-4">Input FASTA. First sequence is Reference. Output shows dots (.) for matches.</p>
             
-            <div class="mb-4">
-                <textarea id="multiInput" class="w-full h-48 p-3 border border-slate-300 rounded font-mono text-sm uppercase focus:ring-2 focus:ring-indigo-500" 
-placeholder=">WildType
+            <textarea id="alnInput" class="w-full h-40 p-3 border border-slate-300 rounded font-mono text-xs uppercase focus:ring-2 focus:ring-indigo-500" 
+placeholder=">Ref_WT
 MKTIIALSYIFCLVFADYKDDDDK
 >Mutant_1
-MKTIIALSYIFCLVFADYK..... (Paste FASTA here)
->Mutant_2 (Del)
-MKTIIAL...FCLVFADYKDDDDK"></textarea>
+MKTIIALSYIFCLVFADYK.....
+>Mutant_2_Del
+MKTII.......LVFADYKDDDDK"></textarea>
+
+            <div class="flex items-center gap-4 mt-4 mb-6">
+                <button onclick="runAlignment()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow-sm">Align Sequences</button>
+                <div class="text-xs text-slate-400">Block Width: 60 chars</div>
             </div>
 
-            <div class="flex items-center gap-4 mb-6">
-                <button onclick="runMultiAlign()" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded shadow-sm">Align Mutants</button>
-                <div class="text-xs text-slate-400">Algorithm: Needleman-Wunsch (Ref-Anchored)</div>
-            </div>
-
-            <div id="alignResult" class="hidden border-t border-slate-200 pt-6">
-                <div class="flex justify-between items-end mb-4">
-                    <h3 class="text-sm font-bold text-slate-700">Alignment View (Dots = Identity)</h3>
-                    <button onclick="copyAlignText()" id="btnCopyAlign" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded border">Copy Text</button>
+            <div id="alnOutput" class="hidden border-t border-slate-200 pt-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-sm font-bold text-slate-700">Alignment Result</h3>
+                    <button onclick="copyAlnText()" id="btnCopyAln" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded border">Copy Text</button>
                 </div>
-                
-                <div class="bg-white border border-slate-200 rounded-lg p-4 overflow-x-auto shadow-inner">
-                    <div id="alignVisual" class="aln-container font-mono">
-                        </div>
-                </div>
+                <div id="alnVisual" class="bg-white border border-slate-200 rounded-lg p-4 overflow-x-auto shadow-inner"></div>
             </div>
         </div>
     </main>
 
-    <main id="content-protein" class="tool-content hidden">
+    <main id="content-mask" class="tool-content hidden">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-xl font-bold text-slate-800 mb-4">🎭 Protein Masking Suite</h2>
-            <div class="mb-4"><label class="text-xs font-bold text-slate-500 uppercase">Sequence</label><input id="protSeq" type="text" class="w-full p-2 border rounded font-mono uppercase"></div>
-            <div class="grid grid-cols-2 gap-4 mb-4">
-                <div class="bg-indigo-50 p-3 rounded"><h3 class="font-bold text-xs mb-2">Sliding Window</h3><button onclick="genSliding()" class="bg-indigo-600 text-white px-4 py-1 rounded text-xs">Generate</button></div>
-                <div class="bg-slate-50 p-3 rounded"><h3 class="font-bold text-xs mb-2">Manual</h3><button onclick="addWorkspace()" class="bg-slate-600 text-white px-4 py-1 rounded text-xs">Clicker</button></div>
+            <h2 class="text-xl font-bold text-slate-800 mb-4">🎭 Protein Masking Generator</h2>
+            <div class="mb-4">
+                <label class="text-xs font-bold text-slate-500 uppercase">Protein Sequence</label>
+                <input id="protSeq" type="text" class="w-full p-2 border border-slate-300 rounded text-sm font-mono uppercase" placeholder="PASTE SEQUENCE...">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+                <div class="bg-indigo-50 p-3 rounded border border-indigo-100">
+                    <h3 class="font-bold text-xs text-indigo-900 mb-2">1. Sliding Window</h3>
+                    <div class="flex gap-1 mb-2"><input id="slideSize" placeholder="Size" value="3" class="w-1/2 text-xs p-1 rounded border"><input id="slideStep" placeholder="Step" value="1" class="w-1/2 text-xs p-1 rounded border"></div>
+                    <button onclick="genSliding()" class="w-full bg-indigo-600 text-white text-xs py-1 rounded font-bold">Generate</button>
+                </div>
+                <div class="bg-purple-50 p-3 rounded border border-purple-100">
+                    <h3 class="font-bold text-xs text-purple-900 mb-2">2. Inverse (Spotlight)</h3>
+                    <input id="invSize" placeholder="Keep Size" value="5" class="w-full text-xs p-1 rounded border mb-2">
+                    <button onclick="genInverse()" class="w-full bg-purple-600 text-white text-xs py-1 rounded font-bold">Generate</button>
+                </div>
+                <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                    <h3 class="font-bold text-xs text-slate-700 mb-2">3. Zipper / Target</h3>
+                    <div class="flex gap-1 mb-1"><input id="periodN" placeholder="N" value="2" class="w-1/2 text-xs p-1 rounded border"><button onclick="genPeriodic()" class="w-1/2 bg-slate-600 text-white text-[10px] rounded">Zipper</button></div>
+                    <div class="flex gap-1"><input id="targetRes" placeholder="C,K" class="w-1/2 text-xs p-1 rounded border uppercase"><button onclick="genTarget()" class="w-1/2 bg-slate-600 text-white text-[10px] rounded">Target</button></div>
+                </div>
+                <div class="bg-slate-50 p-3 rounded border border-slate-200">
+                    <h3 class="font-bold text-xs text-slate-700 mb-2">4. Manual / Random</h3>
+                    <div class="flex gap-1 mb-2"><input id="randN" placeholder="#" value="3" class="w-1/2 text-xs p-1 rounded border"><button onclick="genRandom()" class="w-1/2 bg-slate-600 text-white text-[10px] rounded">Random</button></div>
+                    <button onclick="addWorkspace()" class="w-full bg-slate-400 text-white text-xs py-1 rounded font-bold">Open Clicker</button>
+                </div>
+            </div>
+
+            <div id="genOutputArea" class="hidden">
+                <div class="flex justify-between items-center mb-1"><span class="text-xs font-bold">Results</span><button onclick="copyMaskedRes()" id="btnCopyMask" class="text-[10px] bg-green-600 text-white px-2 py-1 rounded">Copy All</button></div>
+                <div id="genList" class="max-h-48 overflow-y-auto bg-slate-50 p-2 rounded border font-mono text-xs"></div>
             </div>
             <div id="maskContainer" class="mt-4"></div>
-            <div id="genOutputArea" class="hidden mt-4 bg-slate-50 p-2 rounded text-xs font-mono"><div id="genList"></div></div>
+        </div>
+    </main>
+
+    <main id="content-codon" class="tool-content hidden">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <h2 class="text-xl font-bold text-slate-800 mb-2">🦠 Rare Codon Map (E. coli K12)</h2>
+            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-xs uppercase h-24 mb-4" placeholder="PASTE DNA SEQUENCE..." oninput="analyzeCodons()"></textarea>
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg min-h-[100px]">
+                <div id="codonVisual" class="codon-grid"></div>
+            </div>
         </div>
     </main>
 
     <script>
-        // --- TABS ---
+        // --- GLOBAL UTILS ---
         function switchTab(t) {
             document.querySelectorAll('.tool-content').forEach(e => e.classList.add('hidden'));
             document.getElementById('content-'+t).classList.remove('hidden');
-            ['align', 'protein'].forEach(tab => {
+            ['align', 'mask', 'codon'].forEach(tab => {
                 const btn = document.getElementById('btn-'+tab);
-                btn.className = (tab === t) ? 'tab-btn tab-active px-4 py-2 rounded-lg text-sm font-bold' : 'tab-btn tab-inactive px-4 py-2 rounded-lg text-sm font-bold';
+                btn.className = (tab === t) ? 'tab-btn tab-active px-5 py-2 rounded-lg text-sm font-bold' : 'tab-btn tab-inactive px-5 py-2 rounded-lg text-sm font-bold';
             });
         }
 
-        // --- MULTI-ALIGNMENT LOGIC ---
+        // ==========================================
+        // 1. ALIGNMENT LOGIC (With Position Indices)
+        // ==========================================
         function parseFasta(text) {
-            if(!text.includes('>')) return [{name: 'Input', seq: text.replace(/[^A-Z]/gi, '').toUpperCase()}];
-            const entries = [];
-            const parts = text.split('>');
-            parts.forEach(p => {
-                if(!p.trim()) return;
+            if(!text.includes('>')) return [{name: 'Ref', seq: text.replace(/[^A-Z]/gi, '').toUpperCase()}];
+            return text.split('>').filter(p=>p.trim()).map(p=>{
                 const lines = p.split('\n');
-                const name = lines[0].trim().substring(0, 15); // Trim name length
-                const seq = lines.slice(1).join('').replace(/[^A-Z]/gi, '').toUpperCase();
-                if(seq) entries.push({name, seq});
+                return { name: lines[0].trim().substring(0,12), seq: lines.slice(1).join('').replace(/[^A-Z]/gi,'').toUpperCase() };
             });
-            return entries;
         }
 
-        function runMultiAlign() {
-            const raw = document.getElementById('multiInput').value;
+        function runAlignment() {
+            const raw = document.getElementById('alnInput').value;
             const entries = parseFasta(raw);
-
-            if(entries.length < 2) { alert("Please input at least 2 sequences (1 Reference + 1 Mutant)."); return; }
+            if(entries.length < 1) return;
 
             const ref = entries[0];
             const mutants = entries.slice(1);
-            
-            // Align each mutant to reference separately (Ref-Anchored)
-            let results = [];
-            
-            // 1. Process Reference Display (Base)
-            // We assume mostly point mutations/deletions. If insertion happens, we handle per row.
-            
-            let html = "";
-            let copyText = "";
+            let alignedData = [];
 
-            // Header (Reference)
-            html += `<div class="mb-2 pb-2 border-b border-slate-100">`;
-            html += `<span class="aln-name text-indigo-600">${ref.name} (Ref)</span>`;
-            html += `<span class="aln-seq char-ref">${ref.seq}</span>`;
-            html += `</div>`;
-            copyText += `${ref.name.padEnd(15)} ${ref.seq}\n`;
+            // 1. Prepare Data Structure
+            // Ref is matched against itself (base)
+            alignedData.push({ name: ref.name, seq: ref.seq, type: 'ref' });
 
-            mutants.forEach(mut => {
-                const aln = alignPair(ref.seq, mut.seq); // Returns {refAln, mutAln}
-                
-                // Visualization Logic for Dot
-                let visSeq = "";
-                let plainSeq = ""; // For copy text
-
-                // Note: The 'aln.refAln' might contain gaps. 
-                // To keep visualization aligned with the SINGLE Reference line at top,
-                // we strictly check against the original reference indices if possible.
-                // However, simplistic Ref-Anchored view usually just displays the pairwise result.
-                
-                // V18 Logic: Compare aligned mutant char to aligned ref char
-                for(let i=0; i<aln.refAln.length; i++) {
-                    const r = aln.refAln[i];
-                    const m = aln.mutAln[i];
-
-                    if (r === '-' && m !== '-') {
-                        // Insertion in mutant (Reference has gap)
-                        // This breaks the "Stack" visual if we use a single Ref header.
-                        // But requested feature is "Dot View".
-                        visSeq += `<span class="char-mut">${m}</span>`; 
-                        plainSeq += m;
-                    } else if (r !== '-' && m === '-') {
-                        // Deletion in mutant
-                        visSeq += `<span class="char-gap">-</span>`;
-                        plainSeq += "-";
-                    } else if (r === m) {
-                        // Match
-                        visSeq += `<span class="char-dot">.</span>`;
-                        plainSeq += ".";
-                    } else {
-                        // Mismatch
-                        visSeq += `<span class="char-mut">${m}</span>`;
-                        plainSeq += m;
-                    }
+            // 2. Align Mutants
+            mutants.forEach(m => {
+                const res = simpleAlign(ref.seq, m.seq);
+                // Convert to Dot View
+                let dotSeq = "";
+                // Note: res.alnRef contains gaps if mutant has insertion. 
+                // Since this is a simple Ref-Anchored view, we iterate based on the pairwise alignment length.
+                for(let i=0; i<res.alnRef.length; i++) {
+                    const r = res.alnRef[i];
+                    const x = res.alnMut[i];
+                    if(r === x) dotSeq += "."; // Match
+                    else if(r !== '-' && x === '-') dotSeq += "-"; // Deletion
+                    else dotSeq += x; // Mismatch or Insertion
                 }
-
-                html += `<div>`;
-                html += `<span class="aln-name">${mut.name}</span>`;
-                html += `<span class="aln-seq">${visSeq}</span>`;
-                html += `</div>`;
-                copyText += `${mut.name.padEnd(15)} ${plainSeq}\n`;
+                alignedData.push({ name: m.name, seq: dotSeq, type: 'mut', fullSeq: res.alnMut }); // fullSeq used for logic if needed
             });
 
-            document.getElementById('alignVisual').innerHTML = html;
-            document.getElementById('alignResult').classList.remove('hidden');
-            window.lastAlignText = copyText;
+            // 3. Render in Blocks
+            renderBlocks(alignedData);
         }
 
-        function alignPair(seqA, seqB) {
-            // Needleman-Wunsch (Simplified for Ref vs Mut)
-            const MATCH = 2, MISMATCH = -1, GAP = -2;
-            const n = seqA.length, m = seqB.length;
-            let score = Array(n+1).fill().map(()=>Array(m+1).fill(0));
-            let path = Array(n+1).fill().map(()=>Array(m+1).fill(null));
+        function simpleAlign(seqA, seqB) {
+            // Simplified Needleman-Wunsch for demo
+            const MATCH=2, MISMATCH=-1, GAP=-2;
+            const n=seqA.length, m=seqB.length;
+            let score=Array(n+1).fill().map(()=>Array(m+1).fill(0));
+            let path=Array(n+1).fill().map(()=>Array(m+1).fill(null));
 
             for(let i=0; i<=n; i++) { score[i][0]=i*GAP; path[i][0]='up'; }
             for(let j=0; j<=m; j++) { score[0][j]=j*GAP; path[0][j]='left'; }
@@ -212,53 +214,145 @@ MKTIIAL...FCLVFADYKDDDDK"></textarea>
                     const up = score[i-1][j] + GAP;
                     const left = score[i][j-1] + GAP;
                     score[i][j] = Math.max(match, up, left);
-                    if(score[i][j]===match) path[i][j]='diag';
-                    else if(score[i][j]===up) path[i][j]='up';
-                    else path[i][j]='left';
+                    if(score[i][j]===match) path[i][j]='diag'; else if(score[i][j]===up) path[i][j]='up'; else path[i][j]='left';
                 }
             }
-
-            let alnRef = "", alnMut = "";
+            let alnRef="", alnMut="";
             let i=n, j=m;
             while(i>0 || j>0) {
-                if(i>0 && j>0 && path[i][j]==='diag') {
-                    alnRef = seqA[i-1] + alnRef;
-                    alnMut = seqB[j-1] + alnMut;
-                    i--; j--;
-                } else if(i>0 && path[i][j]==='up') {
-                    alnRef = seqA[i-1] + alnRef;
-                    alnMut = "-" + alnMut;
-                    i--;
-                } else {
-                    alnRef = "-" + alnRef;
-                    alnMut = seqB[j-1] + alnMut;
-                    j--;
-                }
+                if(i>0 && j>0 && path[i][j]==='diag') { alnRef=seqA[i-1]+alnRef; alnMut=seqB[j-1]+alnMut; i--; j--; }
+                else if(i>0 && path[i][j]==='up') { alnRef=seqA[i-1]+alnRef; alnMut="-"+alnMut; i--; }
+                else { alnRef="-"+alnRef; alnMut=seqB[j-1]+alnMut; j--; }
             }
-            return { refAln: alnRef, mutAln: alnMut };
+            return { alnRef, alnMut };
         }
 
-        function copyAlignText() {
-            navigator.clipboard.writeText(window.lastAlignText || "");
-            const btn = document.getElementById('btnCopyAlign');
-            btn.innerText = "Copied!"; setTimeout(()=>btn.innerText="Copy Text", 1000);
+        function renderBlocks(data) {
+            const blockSize = 60;
+            // Assuming all aligned pairwise results have roughly same length for visualization (simplified)
+            // Ideally, true MSA requires aligning all together. Here we display pairwise stacks relative to Ref.
+            // For the Ref-Anchored Dot view, we use the length of the first alignment as base (approx).
+            
+            // To make it simple and robust for this tool: We just render based on the longest string found? 
+            // No, strictly, we should assume Ref Length. But insertions break this.
+            // Let's rely on the first entry (Ref) length. *Limitation: Insertions in mutants might get truncated if not handled perfectly in HTML flow, but we use scroll.*
+            
+            // Actually, let's just loop through the Ref sequence length.
+            const totalLen = data[0].seq.length; 
+            let html = "";
+            let textCopy = "";
+
+            for(let i=0; i < totalLen; i += blockSize) {
+                html += `<div class="aln-block">`;
+                
+                data.forEach(d => {
+                    const chunk = d.seq.substr(i, blockSize);
+                    if(!chunk) return;
+                    
+                    // Position Calculation (Approximate based on block index)
+                    const startPos = i + 1;
+                    const endPos = Math.min(i + blockSize, totalLen);
+
+                    // Stylize Chunk
+                    let styleSeq = "";
+                    for(let c of chunk) {
+                        if(c === '.') styleSeq += `<span class="c-dot">.</span>`;
+                        else if(c === '-') styleSeq += `<span class="c-gap">-</span>`;
+                        else if(d.type === 'ref') styleSeq += `<span class="c-ref">${c}</span>`;
+                        else styleSeq += `<span class="c-mut">${c}</span>`;
+                    }
+
+                    html += `<div class="aln-row">
+                        <div class="aln-label" title="${d.name}">${d.name}</div>
+                        <div class="aln-idx">${startPos}</div>
+                        <div class="aln-seq-container"><span class="aln-seq">${styleSeq}</span></div>
+                        <div class="aln-idx text-left ml-2">${endPos}</div>
+                    </div>`;
+
+                    textCopy += `${d.name.padEnd(12)} ${startPos.toString().padStart(4)} ${chunk} ${endPos}\n`;
+                });
+                
+                html += `</div>`;
+                textCopy += "\n";
+            }
+            
+            document.getElementById('alnVisual').innerHTML = html;
+            document.getElementById('alnOutput').classList.remove('hidden');
+            window.lastAlnText = textCopy;
         }
 
-        // --- MASKING UTILS (From V16 - Essential parts) ---
-        function getSeq() { return document.getElementById('protSeq').value.trim(); }
-        function displayVariants(arr) { 
-            const d = document.getElementById('genList'); d.innerHTML = arr.map((v,i)=>`<div class="mb-1">${i+1}. ${v}</div>`).join('');
+        function copyAlnText() {
+            navigator.clipboard.writeText(window.lastAlnText || "");
+            const btn = document.getElementById('btnCopyAln'); btn.innerText = "Copied!"; setTimeout(()=>btn.innerText="Copy Text",1000);
+        }
+
+
+        // ==========================================
+        // 2. MASKING LOGIC (From V16)
+        // ==========================================
+        let genVars = [];
+        function getSeq() { return document.getElementById('protSeq').value.trim().toUpperCase(); }
+        function showVars(arr) { 
+            genVars = arr;
+            document.getElementById('genList').innerHTML = arr.map((v,i)=>`<div class="mb-1 border-b border-slate-100 pb-1">${i+1}. ${v}</div>`).join('');
             document.getElementById('genOutputArea').classList.remove('hidden');
         }
+        function copyMaskedRes() { navigator.clipboard.writeText(genVars.join('\n')); }
+
         function genSliding() {
-            const s = getSeq(); if(!s) return;
-            let res=[]; for(let i=0;i<s.length-3;i++) res.push(s.substring(0,i)+"___"+s.substring(i+3));
-            displayVariants(res);
+            const s=getSeq(), sz=parseInt(document.getElementById('slideSize').value)||3, st=parseInt(document.getElementById('slideStep').value)||1;
+            if(!s) return; let r=[]; for(let i=0;i<=s.length-sz;i+=st) r.push(s.substring(0,i)+"_".repeat(sz)+s.substring(i+sz));
+            showVars(r);
+        }
+        function genInverse() {
+            const s=getSeq(), sz=parseInt(document.getElementById('invSize').value)||5;
+            if(!s) return; let r=[]; for(let i=0;i<=s.length-sz;i++) r.push("_".repeat(i)+s.substring(i,i+sz)+"_".repeat(s.length-(i+sz)));
+            showVars(r);
+        }
+        function genPeriodic() {
+            const s=getSeq(), n=parseInt(document.getElementById('periodN').value)||2;
+            if(!s) return; let res=""; for(let i=0;i<s.length;i++) res+=((i+1)%n===0)?"_":s[i];
+            showVars([res]);
+        }
+        function genTarget() {
+            const s=getSeq(), t=document.getElementById('targetRes').value.toUpperCase().replace(/[^A-Z]/g,'').split('');
+            if(!s||t.length===0) return; showVars([s.split('').map(c=>t.includes(c)?'_':c).join('')]);
+        }
+        function genRandom() {
+            const s=getSeq(), n=parseInt(document.getElementById('randN').value)||3;
+            if(!s) return; let a=s.split(''), idx=[...Array(s.length).keys()].sort(()=>Math.random()-0.5);
+            for(let i=0;i<n&&i<idx.length;i++) a[idx[i]]='_';
+            showVars([a.join('')]);
         }
         function addWorkspace() {
-            const s = getSeq(); if(!s) return;
-            document.getElementById('maskContainer').innerHTML = `<div class="flex flex-wrap gap-1 bg-white p-2 border rounded">` + 
-                s.split('').map(c=>`<div class="residue-box" onclick="this.firstChild.classList.toggle('masked')"><div class="residue-char">${c}</div></div>`).join('') + `</div>`;
+            const s=getSeq(); if(!s) return;
+            const id = `ws-${Date.now()}`;
+            let h = `<div class="bg-white border p-2 rounded mt-2 relative" id="${id}"><button onclick="document.getElementById('${id}').remove()" class="absolute top-1 right-1 text-red-400">×</button><div class="flex flex-wrap gap-1 mt-4">`;
+            s.split('').forEach((c,i)=>h+=`<div class="residue-box" onclick="this.firstChild.classList.toggle('masked')"><div class="residue-char">${c}</div><div class="residue-num">${i+1}</div></div>`);
+            document.getElementById('maskContainer').insertAdjacentHTML('afterbegin', h+`</div><div class="mt-2 text-right"><button onclick="copyW('${id}')" class="text-xs bg-indigo-50 text-indigo-600 px-2 rounded">Copy</button></div></div>`);
+        }
+        function copyW(id) {
+            let s=""; document.getElementById(id).querySelectorAll('.residue-box').forEach(b=>s+=b.firstChild.classList.contains('masked')?'_':b.innerText.split('\n')[0]);
+            navigator.clipboard.writeText(s);
+        }
+
+        // ==========================================
+        // 3. RARE CODON LOGIC (From V15)
+        // ==========================================
+        function analyzeCodons() {
+            const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
+            const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
+            const freq={'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
+            const max={}; Object.keys(map).forEach(c=>{ if(!max[map[c]] || freq[c]>max[map[c]]) max[map[c]]=freq[c]; });
+            let h = "";
+            for (let i = 0; i < dna.length; i += 3) {
+                const c = dna.substr(i, 3);
+                if(c.length < 3) break;
+                const aa = map[c] || '?';
+                const ratio = (freq[c]||0)/(max[aa]||1);
+                h += `<div class="codon-box ${ratio<0.1?'is-rare':''}" title="${aa}"><div class="cb-aa">${aa}</div><div class="cb-seq">${c}</div><div class="cb-pos">${i+1}</div></div>`;
+            }
+            document.getElementById('codonVisual').innerHTML = h;
         }
     </script>
 </body>
