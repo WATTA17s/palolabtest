@@ -3,46 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V25 (Refined)</title>
+    <title>Molecular Workbench V26 (Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f1f5f9; color: #334155; }
+        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
         .font-mono { font-family: 'Roboto Mono', monospace; }
 
-        /* NAVIGATION */
-        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+        /* TABS */
+        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.2s; cursor: pointer; }
         .nav-active { background: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
         .nav-inactive { background: white; color: #64748b; border: 1px solid #e2e8f0; }
-        .nav-inactive:hover { background: #f8fafc; border-color: #cbd5e1; }
+        .nav-inactive:hover { background: #f1f5f9; }
 
-        /* ALIGNMENT BLOCK STYLE */
-        .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.5; white-space: pre; overflow-x: auto; }
-        .aln-block { margin-bottom: 24px; background: white; padding: 10px; border-radius: 8px; border: 1px solid #e2e8f0; }
+        /* ALIGNMENT BLOCK */
+        .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.6; white-space: pre; overflow-x: auto; }
+        .aln-block { margin-bottom: 20px; background: white; padding: 12px; border-radius: 8px; border: 1px solid #cbd5e1; }
         .aln-row { display: flex; }
-        .aln-label { width: 100px; flex-shrink: 0; color: #64748b; font-weight: bold; text-align: right; padding-right: 15px; user-select: none; }
+        .aln-label { width: 90px; flex-shrink: 0; color: #64748b; font-weight: bold; text-align: right; padding-right: 15px; user-select: none; }
         .aln-seq { color: #1e293b; letter-spacing: 1px; }
+        .ruler-seq { color: #3b82f6; font-weight: bold; padding-bottom: 2px; border-bottom: 1px dashed #e2e8f0; margin-bottom: 4px; display: block; }
         
-        .pos-line { color: #3b82f6; font-weight: bold; margin-bottom: 2px; } /* The Ruler */
-        .seq-ref { font-weight: bold; color: #0f172a; border-bottom: 1px solid #f1f5f9; display: block; padding-bottom: 2px; margin-bottom: 2px; }
-        .seq-mut { color: #475569; }
-
-        .c-match { color: #cbd5e1; } /* Dot */
-        .c-mut { color: #dc2626; background-color: #fee2e2; font-weight: bold; border-radius: 2px; }
+        .c-match { color: #cbd5e1; }
+        .c-mut { color: #dc2626; background: #fee2e2; border-radius: 2px; font-weight: bold; }
         .c-gap { color: #94a3b8; }
 
-        /* MASKING LIST */
-        .mask-item { background: white; border-bottom: 1px solid #f1f5f9; padding: 8px; font-family: 'Roboto Mono', monospace; font-size: 11px; display: flex; gap: 8px; align-items: center; }
-        .mask-item:last-child { border-bottom: none; }
-        .mask-item:hover { background-color: #f8fafc; }
-        .mask-idx { color: #94a3b8; width: 25px; text-align: right; font-weight: bold; user-select: none; }
-
-        /* GRID */
-        .mask-box { width: 30px; height: 35px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; }
+        /* MASKING */
+        .mask-box { width: 32px; height: 38px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; transition: all 0.1s; }
+        .mask-box:hover { border-color: #3b82f6; transform: translateY(-1px); }
         .mask-box.active { background-color: #ef4444; border-color: #dc2626; color: white; }
-        
+        .mask-box.active span { color: white; }
+
+        .list-card { background: white; padding: 8px 12px; border-bottom: 1px solid #f1f5f9; font-family: 'Roboto Mono', monospace; font-size: 11px; display: flex; align-items: center; gap: 8px; }
+        .list-card:hover { background: #f8fafc; }
+        .list-idx { color: #94a3b8; font-weight: bold; min-width: 20px; }
+
         /* CODON */
-        .codon-card { border: 1px solid #e2e8f0; background: white; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4px; }
+        .codon-card { background: white; border: 1px solid #e2e8f0; padding: 4px; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .codon-rare { background: #fff1f2; border-color: #fda4af; }
         .codon-rare .seq { color: #be123c; font-weight: bold; }
     </style>
@@ -52,65 +49,74 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Workbench <span class="text-xs bg-slate-700 text-white px-2 py-1 rounded">V25.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-green-600 text-white px-2 py-1 rounded">V26 Fixed</span>
             </h1>
-            <p class="text-slate-500 text-xs">Block Align | Visual Mask List | Yellow Label</p>
+            <p class="text-slate-500 text-xs mt-1">Block Align | Visual Mask List | Rare Codon Yellow</p>
         </div>
         <nav class="flex gap-2">
-            <button onclick="show('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
-            <button onclick="show('mask')" id="btn-mask" class="nav-btn nav-inactive">Masking</button>
-            <button onclick="show('codon')" id="btn-codon" class="nav-btn nav-inactive">Rare Codon</button>
+            <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
+            <button onclick="switchTab('mask')" id="btn-mask" class="nav-btn nav-inactive">Masking</button>
+            <button onclick="switchTab('codon')" id="btn-codon" class="nav-btn nav-inactive">Rare Codon</button>
         </nav>
     </header>
 
     <main id="view-align" class="tool-view">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 class="text-lg font-bold text-slate-800 mb-4">⛓️ Alignment (Block View)</h2>
-            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4" 
-placeholder=">Reference
+            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4 focus:ring-2 focus:ring-blue-500 outline-none" 
+placeholder=">Ref
 MKTIIALSYIFCLVFADYK...
 >Mutant_1
 MKTII.......K......"></textarea>
-            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow-sm">Analyze Alignment</button>
-            
-            <div id="alnOutput" class="mt-8">
-                </div>
+            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition">Analyze Alignment</button>
+            <div id="alnOutput" class="mt-6"></div>
         </div>
     </main>
 
     <main id="view-mask" class="tool-view hidden">
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 class="text-lg font-bold text-slate-800 mb-4">🎭 Masking Generator</h2>
-            
+
             <div class="mb-6">
-                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2" placeholder="Protein Sequence..." oninput="renderGrid()">
-                <div id="gridArea" class="flex flex-wrap gap-1 p-2 bg-slate-50 border rounded max-h-40 overflow-y-auto"></div>
+                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2 focus:ring-2 focus:ring-blue-500 outline-none" placeholder="Protein Sequence..." oninput="renderGrid()">
+                <div id="gridContainer" class="flex flex-wrap gap-1 p-3 bg-slate-50 border rounded max-h-48 overflow-y-auto min-h-[60px]">
+                    <span class="text-xs text-slate-400 m-auto">Type sequence above to see grid</span>
+                </div>
                 <div class="flex gap-2 mt-2">
-                    <button onclick="addFromGrid()" class="bg-slate-600 text-white text-xs px-3 py-1 rounded font-bold">Add Selected</button>
-                    <button onclick="resetGrid()" class="text-red-500 text-xs hover:underline ml-auto">Reset Grid</button>
+                    <button onclick="addCurrentSelection()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-4 py-2 rounded font-bold shadow transition">Add Selected Mask</button>
+                    <button onclick="clearGridSelection()" class="text-red-500 text-xs hover:underline ml-auto self-center">Reset Grid</button>
                 </div>
             </div>
 
-            <div class="bg-blue-50 p-3 rounded border border-blue-100 mb-6 flex gap-2 items-center">
-                <span class="text-xs font-bold text-blue-800">Auto Scan:</span>
-                <input id="winSize" value="3" class="w-12 text-center text-xs p-1 border rounded" placeholder="Win">
-                <input id="stepSize" value="1" class="w-12 text-center text-xs p-1 border rounded" placeholder="Step">
-                <button onclick="runAutoScan()" class="bg-blue-600 text-white text-xs px-3 py-1 rounded font-bold">Generate All</button>
+            <div class="bg-blue-50 p-4 rounded border border-blue-100 mb-6 flex flex-wrap gap-3 items-center">
+                <span class="text-xs font-bold text-blue-800">Auto Scan (Sliding):</span>
+                <div class="flex items-center gap-1">
+                    <input id="winSize" value="3" class="w-12 text-center text-xs p-1 border rounded" placeholder="Win">
+                    <span class="text-[10px] text-blue-600">Size</span>
+                </div>
+                <div class="flex items-center gap-1">
+                    <input id="stepSize" value="1" class="w-12 text-center text-xs p-1 border rounded" placeholder="Step">
+                    <span class="text-[10px] text-blue-600">Step</span>
+                </div>
+                <button onclick="runAutoScan()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-4 py-2 rounded font-bold shadow ml-auto transition">Generate All</button>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-80">
-                <div class="flex flex-col">
+                <div class="flex flex-col h-full">
                     <div class="flex justify-between mb-1">
-                        <label class="text-xs font-bold text-slate-500">Raw Text (For Copying)</label>
-                        <button onclick="copyRaw()" id="btnCopy" class="text-xs text-green-600 font-bold hover:underline">Copy All</button>
+                        <label class="text-xs font-bold text-slate-500">Raw Text (Copyable)</label>
+                        <button onclick="copyRaw()" id="btnCopyRaw" class="text-xs text-green-600 font-bold hover:underline">Copy</button>
                     </div>
-                    <textarea id="maskRaw" class="flex-1 p-2 border border-slate-200 rounded font-mono text-xs resize-none" readonly></textarea>
+                    <textarea id="maskRaw" class="flex-1 p-3 border border-slate-200 rounded font-mono text-xs resize-none bg-slate-50 focus:outline-none" readonly></textarea>
                 </div>
-                
-                <div class="flex flex-col">
-                    <label class="text-xs font-bold text-slate-500 mb-1">Preview List (<span id="countLib">0</span>)</label>
-                    <div id="maskVisual" class="flex-1 border border-slate-200 rounded bg-slate-50 overflow-y-auto">
-                        <div class="text-center text-slate-400 text-xs mt-10">List is empty</div>
+
+                <div class="flex flex-col h-full">
+                    <div class="flex justify-between mb-1">
+                        <label class="text-xs font-bold text-slate-500">Visual List (<span id="libCount">0</span>)</label>
+                        <button onclick="clearAllList()" class="text-xs text-red-400 font-bold hover:text-red-600">Clear All</button>
+                    </div>
+                    <div id="maskVisualList" class="flex-1 border border-slate-200 rounded bg-white overflow-y-auto relative">
+                        <div class="absolute inset-0 flex items-center justify-center text-slate-300 text-xs pointer-events-none">Empty List</div>
                     </div>
                 </div>
             </div>
@@ -121,31 +127,35 @@ MKTII.......K......"></textarea>
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <div class="flex justify-between items-center mb-4">
                 <h2 class="text-lg font-bold text-slate-800">🦠 Rare Codon Map</h2>
-                <span class="bg-yellow-400 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-yellow-500">
-                    Ref: E. coli K12 (Kazusa)
+                <span class="bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-yellow-400">
+                    ⚠️ Ref: E. coli K12
                 </span>
             </div>
-            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm uppercase h-24 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="PASTE DNA SEQUENCE..." oninput="analyzeCodons()"></textarea>
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm uppercase h-24 mb-4 focus:ring-2 focus:ring-yellow-400 outline-none" placeholder="PASTE DNA SEQUENCE..." oninput="analyzeCodons()"></textarea>
+            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl min-h-[100px]">
                 <div id="codonGrid" class="grid grid-cols-8 md:grid-cols-12 gap-2"></div>
             </div>
         </div>
     </main>
 
     <script>
+        // --- GLOBAL STATE ---
+        let libraryList = [];
+
         // --- NAVIGATION ---
-        function show(id) {
+        window.switchTab = function(id) {
             document.querySelectorAll('.tool-view').forEach(e => e.classList.add('hidden'));
             document.getElementById('view-'+id).classList.remove('hidden');
             ['align','mask','codon'].forEach(k => {
-                document.getElementById('btn-'+k).className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
+                const btn = document.getElementById('btn-'+k);
+                btn.className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
             });
         }
 
-        // ===========================================
-        // 1. ALIGNMENT (BLOCK STYLE + REF RULER)
-        // ===========================================
-        function runAlign() {
+        // ==========================================
+        // 1. ALIGNMENT (Block View + Ruler)
+        // ==========================================
+        window.runAlign = function() {
             const raw = document.getElementById('alnInput').value;
             const lines = raw.split('\n');
             let seqs = [], curr = {n:'', s:''};
@@ -159,137 +169,197 @@ MKTII.......K......"></textarea>
             if(seqs.length === 0) return;
 
             const ref = seqs[0];
-            const width = 50; // Block width
+            const width = 50; 
             let html = `<div class="aln-container">`;
 
             for(let i=0; i < ref.s.length; i += width) {
                 html += `<div class="aln-block">`;
                 
-                // 1. Ruler Line (Only for Reference)
-                let rulerStr = "";
-                // Create a string of spaces, then replace specific indices with numbers
+                // Ruler
                 let rulerArr = Array(width).fill(' ');
                 for(let k=0; k<width; k++) {
                     let realPos = i + k + 1;
                     if(realPos > ref.s.length) break;
-                    
                     if(realPos % 10 === 0) {
-                        let numStr = realPos.toString();
-                        // Place number ending at k
-                        for(let d=0; d<numStr.length; d++) {
-                            let idx = k - numStr.length + 1 + d;
-                            if(idx >= 0 && idx < width) rulerArr[idx] = numStr[d];
+                        let s = realPos.toString();
+                        for(let d=0; d<s.length; d++) {
+                            let idx = k - s.length + 1 + d;
+                            if(idx >= 0 && idx < width) rulerArr[idx] = s[d];
                         }
-                    } else if (realPos % 5 === 0) {
-                        rulerArr[k] = '|';
-                    } else {
-                        rulerArr[k] = '.';
-                    }
+                    } else if (realPos % 5 === 0) rulerArr[k] = '|';
+                    else rulerArr[k] = '.';
                 }
+
                 html += `<div class="aln-row">
                             <div class="aln-label">Pos</div>
-                            <div class="aln-seq pos-line">${rulerArr.join('')}</div>
+                            <div class="aln-seq ruler-seq">${rulerArr.join('')}</div>
                          </div>`;
 
-                // 2. Reference Sequence
+                // Ref
                 let chunkRef = ref.s.substr(i, width);
                 html += `<div class="aln-row">
-                            <div class="aln-label" title="${ref.n}">${ref.n}</div>
-                            <div class="aln-seq seq-ref">${chunkRef}</div>
+                            <div class="aln-label" title="${ref.n}">${ref.n.substring(0,10)}</div>
+                            <div class="aln-seq font-bold text-slate-800 pb-1 mb-1 border-b border-slate-100 block">${chunkRef}</div>
                          </div>`;
 
-                // 3. Mutants
+                // Mutants
                 for(let m=1; m<seqs.length; m++) {
                     let sObj = seqs[m];
                     let chunkMut = sObj.s.substr(i, width);
                     let vis = "";
-                    
                     for(let k=0; k<chunkMut.length; k++) {
-                        let mc = chunkMut[k];
+                        let mc = chunkMut[k] || '';
                         let rc = chunkRef[k] || '';
-                        
-                        if(mc === rc && mc !== '-') vis += `<span class="c-match">.</span>`;
-                        else if (mc === '-') vis += `<span class="c-gap">-</span>`;
+                        if(mc===rc && mc!=='-') vis += `<span class="c-match">.</span>`;
+                        else if(mc==='-') vis += `<span class="c-gap">-</span>`;
                         else vis += `<span class="c-mut">${mc}</span>`;
                     }
-
                     html += `<div class="aln-row">
-                                <div class="aln-label" title="${sObj.n}">${sObj.n}</div>
-                                <div class="aln-seq seq-mut">${vis}</div>
+                                <div class="aln-label" title="${sObj.n}">${sObj.n.substring(0,10)}</div>
+                                <div class="aln-seq">${vis}</div>
                              </div>`;
                 }
-
-                html += `</div>`; // End Block
+                html += `</div>`;
             }
             html += `</div>`;
             document.getElementById('alnOutput').innerHTML = html;
         }
 
-        // ===========================================
-        // 2. MASKING (VISUAL LIST + GRID)
-        // ===========================================
-        let libraryList = [];
-
-        function renderGrid() {
+        // ==========================================
+        // 2. MASKING (FIXED LOGIC)
+        // ==========================================
+        window.renderGrid = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
-            const area = document.getElementById('gridArea');
-            if(!seq) { area.innerHTML = ""; return; }
+            const container = document.getElementById('gridContainer');
+            if(!seq) { 
+                container.innerHTML = `<span class="text-xs text-slate-400 m-auto">Type sequence above to see grid</span>`; 
+                return; 
+            }
             
-            let h = "";
+            let html = "";
             for(let i=0; i<seq.length; i++) {
-                h += `<div class="mask-box" id="mb-${i}" onclick="toggleBox(${i})">
-                    <span class="text-[10px] font-bold">${seq[i]}</span>
-                    <span class="text-[8px] text-slate-400">${i+1}</span>
+                // IMPORTANT: inline onclick calls global window.toggleBox
+                html += `<div class="mask-box" id="mb-${i}" onclick="toggleBox(${i})">
+                    <span class="text-xs font-bold text-slate-600">${seq[i]}</span>
+                    <span class="text-[8px] text-slate-300 mt-1">${i+1}</span>
                 </div>`;
             }
-            area.innerHTML = h;
+            container.innerHTML = html;
         }
 
-        function toggleBox(i) {
-            document.getElementById(`mb-${i}`).classList.toggle('active');
+        window.toggleBox = function(idx) {
+            const el = document.getElementById(`mb-${idx}`);
+            if(el) el.classList.toggle('active');
         }
-        function resetGrid() {
+
+        window.clearGridSelection = function() {
             document.querySelectorAll('.mask-box').forEach(b => b.classList.remove('active'));
         }
 
-        function addFromGrid() {
+        window.addCurrentSelection = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
             if(!seq) return;
-            let res = "";
+
+            let maskedStr = "";
             let hasMask = false;
+            
             for(let i=0; i<seq.length; i++) {
-                const b = document.getElementById(`mb-${i}`);
-                if(b && b.classList.contains('active')) { res += "_"; hasMask = true; }
-                else res += seq[i];
+                const box = document.getElementById(`mb-${i}`);
+                if(box && box.classList.contains('active')) {
+                    maskedStr += "_";
+                    hasMask = true;
+                } else {
+                    maskedStr += seq[i];
+                }
             }
+
             if(hasMask) {
-                if(!libraryList.includes(res)) libraryList.push(res);
-                updateMaskOutput();
+                if(!libraryList.includes(maskedStr)) {
+                    libraryList.push(maskedStr);
+                    updateLibraryUI();
+                }
+            } else {
+                alert("Please select residues in the grid to mask first.");
             }
         }
 
-        function runAutoScan() {
+        window.runAutoScan = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
             if(!seq) return;
-            const win = parseInt(document.getElementById('winSize').value)||3;
-            const step = parseInt(document.getElementById('stepSize').value)||1;
-            
-            libraryList = []; // Clear old on new auto run? Usually yes.
-            
-            for(let i=0; i<=seq.length-win; i+=step) {
-                libraryList.push(seq.substring(0,i) + "_".repeat(win) + seq.substring(i+win));
+
+            const win = parseInt(document.getElementById('winSize').value) || 3;
+            const step = parseInt(document.getElementById('stepSize').value) || 1;
+
+            for(let i=0; i <= seq.length - win; i += step) {
+                const variant = seq.substring(0,i) + "_".repeat(win) + seq.substring(i+win);
+                if(!libraryList.includes(variant)) {
+                    libraryList.push(variant);
+                }
             }
-            updateMaskOutput();
+            updateLibraryUI();
         }
 
-        function updateMaskOutput() {
+        window.updateLibraryUI = function() {
             // Update Textarea
             document.getElementById('maskRaw').value = libraryList.join('\n');
-            document.getElementById('countLib').innerText = libraryList.length;
+            document.getElementById('libCount').innerText = libraryList.length;
 
             // Update Visual List
+            const visualContainer = document.getElementById('maskVisualList');
+            if(libraryList.length === 0) {
+                visualContainer.innerHTML = `<div class="absolute inset-0 flex items-center justify-center text-slate-300 text-xs pointer-events-none">Empty List</div>`;
+                return;
+            }
+
+            let html = "";
+            libraryList.forEach((seq, idx) => {
+                html += `<div class="list-card">
+                    <div class="list-idx">${idx+1}.</div>
+                    <div class="text-slate-700 font-bold tracking-wider">${seq}</div>
+                </div>`;
+            });
+            visualContainer.innerHTML = html;
+        }
+
+        window.clearAllList = function() {
+            libraryList = [];
+            updateLibraryUI();
+        }
+
+        window.copyRaw = function() {
+            const el = document.getElementById('maskRaw');
+            el.select();
+            document.execCommand('copy');
+            const btn = document.getElementById('btnCopyRaw');
+            btn.innerText = "COPIED!";
+            setTimeout(() => btn.innerText = "Copy", 1000);
+        }
+
+        // ==========================================
+        // 3. RARE CODON
+        // ==========================================
+        window.analyzeCodons = function() {
+            const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
+            const map = {'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
+            const usage = {'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
+            
+            let maxF={}; for(let c in map) { let a=map[c]; if(!maxF[a] || usage[c]>maxF[a]) maxF[a]=usage[c]; }
             let h = "";
-            libraryList.forEach((s, i) => {
-                h += `<div class="mask-item">
-                    <div class="mask-idx">${i+1}.</div>
-                    <div class="font-bold text-slate-700">${s
+            for(let i=0; i<dna.length; i+=3) {
+                let c = dna.substr(i,3);
+                if(c.length<3) break;
+                let aa = map[c]||'?';
+                let isRare = ((usage[c]||0)/(maxF[aa]||1)) < 0.10;
+                if(aa==='M'||aa==='W') isRare=false;
+
+                h += `<div class="codon-card ${isRare?'codon-rare':''}">
+                    <div class="text-[10px] font-bold text-slate-500">${aa}</div>
+                    <div class="seq text-xs font-mono">${c}</div>
+                    <div class="text-[8px] text-slate-300 mt-1">${i+1}</div>
+                </div>`;
+            }
+            document.getElementById('codonGrid').innerHTML = h;
+        }
+    </script>
+</body>
+</html>
