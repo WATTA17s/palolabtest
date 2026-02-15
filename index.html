@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V32 (Fixed)</title>
+    <title>Molecular Workbench V33 (Center Fixed)</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
@@ -16,15 +16,21 @@
         .nav-inactive { background: white; color: #64748b; border-color: #e2e8f0; }
         .nav-inactive:hover { background: #f1f5f9; color: #334155; }
 
-        /* ALIGNMENT */
+        /* 1. ALIGNMENT STYLES */
         .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; padding-bottom: 10px; }
         .aln-block { margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: max-content; }
         .aln-row { display: flex; align-items: center; }
         .aln-name { width: 100px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #64748b; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
         
+        /* FIXED: Force Center Residue Box */
         .res-box { 
-            width: 1ch; height: 24px; display: inline-flex; align-items: center; justify-content: center;
-            cursor: crosshair; transition: all 0.05s;
+            width: 16px; /* Fixed width > 1ch to ensure centering */
+            height: 26px; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; /* Absolute Center */
+            cursor: crosshair; 
+            transition: all 0.05s;
         }
         .res-box:hover {
             background-color: #f59e0b; color: white !important; font-weight: bold;
@@ -47,17 +53,30 @@
             box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
         }
 
-        /* MASKING */
-        .mask-grid-box { width: 32px; height: 38px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; border-radius: 4px; transition: 0.1s; }
+        /* 2. MASKING STYLES */
+        /* FIXED: Force Center Grid Box */
+        .mask-grid-box { 
+            width: 34px; height: 40px; 
+            border: 1px solid #e2e8f0; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; /* Absolute Center */
+            cursor: pointer; 
+            background: white; 
+            border-radius: 4px; 
+            transition: 0.1s; 
+        }
         .mask-grid-box:hover { border-color: #3b82f6; transform: translateY(-1px); }
         .mask-grid-box.active { background-color: #ef4444; border-color: #dc2626; color: white; }
 
         .mask-visual-container { height: 320px; display: flex; flex-direction: column; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
         .mask-list-scroll { flex: 1; overflow-y: auto; padding: 0; }
         
-        /* Revised List Card for Ready-to-Click Copy */
         .list-card { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 12px; height: 40px; }
         .list-card:hover { background-color: #f0f9ff; }
+        
+        /* Copy Button Style */
         .btn-copy-ready {
             background-color: #e2e8f0; color: #475569;
             padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 10px;
@@ -66,8 +85,8 @@
         .btn-copy-ready:hover { background-color: #cbd5e1; color: #1e293b; }
         .btn-copy-ready:active { transform: scale(0.95); }
 
-        /* CODON */
-        .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; }
+        /* 3. CODON STYLES */
+        .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
         .codon-rare { background: #fff1f2; border-color: #fda4af; }
     </style>
 </head>
@@ -76,9 +95,9 @@
     <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
             <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-emerald-600 text-white px-2 py-1 rounded">V32.0</span>
+                🧬 Molecular Workbench <span class="text-xs bg-rose-600 text-white px-2 py-1 rounded">V33.0</span>
             </h1>
-            <p class="text-slate-500 text-xs mt-1">Re-Run Fixed | Quick Copy Ready</p>
+            <p class="text-slate-500 text-xs mt-1">Refreshed Alignment | Perfect Center Grid</p>
         </div>
         <nav class="flex gap-2">
             <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
@@ -103,7 +122,7 @@ MKTIIALSYIFCLVFADYKSLG...
 >Mutant_Example
 MKTIIAL.......FADYK..."></textarea>
             
-            <button onclick="runAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95">Analyze Alignment</button>
+            <button id="btnRunAlign" onclick="safeRunAlign()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">Analyze</button>
             
             <div id="alnOutput" class="mt-6"></div>
         </div>
@@ -115,7 +134,7 @@ MKTIIAL.......FADYK..."></textarea>
 
             <div class="mb-6">
                 <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2 focus:outline-none focus:border-blue-500" placeholder="Paste Protein Sequence..." oninput="renderGrid()">
-                <div id="gridContainer" class="flex flex-wrap gap-1 p-3 bg-slate-50 border rounded max-h-48 overflow-y-auto">
+                <div id="gridContainer" class="flex flex-wrap gap-1 p-3 bg-slate-50 border rounded max-h-48 overflow-y-auto justify-center">
                     <span class="text-xs text-slate-400 m-auto">Sequence Grid Preview</span>
                 </div>
                 <div class="flex gap-2 mt-2">
@@ -188,22 +207,39 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 1. ALIGNMENT (RE-RUN FIXED)
+        // 1. ALIGNMENT (FORCE RESET & CENTER)
         // ==========================================
+        window.safeRunAlign = function() {
+            // Visual Feedback: Show "Running..."
+            const btn = document.getElementById('btnRunAlign');
+            const originalText = btn.innerText;
+            btn.innerText = "Analyzing...";
+            
+            // Allow UI to update before processing
+            setTimeout(() => {
+                try {
+                    runAlign(); // Call actual function
+                } catch(e) {
+                    alert("Error parsing sequence. Please check format.");
+                    console.error(e);
+                }
+                btn.innerText = originalText;
+            }, 50);
+        }
+
         window.runAlign = function() {
-            // 1. Force Clear DOM
+            // 1. Clear Output & DOM
             const outDiv = document.getElementById('alnOutput');
             outDiv.innerHTML = ''; 
 
             const raw = document.getElementById('alnInput').value;
             if(!raw.trim()) return;
 
-            // 2. Local Scope Variables (Reset every click)
+            // 2. Parse Input (Strict Reset)
             const lines = raw.split('\n');
             let seqs = []; 
             let curr = {n:'', s:''};
             
-            // 3. Fresh Parsing
             lines.forEach(l => {
                 l = l.trim();
                 if(l.startsWith('>')) { 
@@ -221,7 +257,7 @@ MKTIIAL.......FADYK..."></textarea>
             const ref = seqs[0];
             document.getElementById('seqLen').innerText = ref.s.length;
             
-            // 4. Render 100 Width
+            // 3. Render (Width 100 + Center Fix)
             const width = 100; 
             let html = `<div class="aln-container">`;
 
@@ -283,7 +319,7 @@ MKTIIAL.......FADYK..."></textarea>
         }
 
         // ==========================================
-        // 2. MASKING (VISIBLE COPY BUTTON)
+        // 2. MASKING (CENTER GRID)
         // ==========================================
         window.renderGrid = function() {
             const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
@@ -291,6 +327,7 @@ MKTIIAL.......FADYK..."></textarea>
             if(!seq) { container.innerHTML = `<span class="text-xs text-slate-400 m-auto">Enter sequence to see grid</span>`; return; }
             let h = "";
             for(let i=0; i<seq.length; i++) {
+                // Style ensures perfect centering
                 h += `<div class="mask-grid-box" id="mb-${i}" onclick="toggleBox(${i})">
                     <span class="text-xs font-bold text-slate-600">${seq[i]}</span>
                     <span class="text-[8px] text-slate-300">${i+1}</span>
@@ -331,7 +368,6 @@ MKTIIAL.......FADYK..."></textarea>
             if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
             let h = "";
             libraryList.forEach((seq, idx) => {
-                // FIXED: Always visible Copy button
                 h += `<div class="list-card">
                     <div class="flex items-center gap-2 overflow-hidden">
                         <span class="text-slate-400 w-5 text-right font-mono">${idx+1}.</span>
@@ -346,12 +382,12 @@ MKTIIAL.......FADYK..."></textarea>
         window.copyOne = function(txt, btn) {
             navigator.clipboard.writeText(txt);
             let prev = btn.innerText;
-            btn.innerText="Copied!";
+            btn.innerText = "Copied!";
             btn.style.backgroundColor = "#22c55e"; // Green
             btn.style.color = "white";
             setTimeout(()=>{ 
-                btn.innerText="Copy"; 
-                btn.style.backgroundColor = ""; // Reset
+                btn.innerText = "Copy"; 
+                btn.style.backgroundColor = ""; 
                 btn.style.color = ""; 
             }, 1000);
         }
