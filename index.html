@@ -3,371 +3,365 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Molecular Workbench V22 (Corrected)</title>
+    <title>Molecular Workbench V23 (Perfected)</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Inter', sans-serif; background-color: #f8fafc; color: #334155; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; color: #1f2937; }
+        .font-mono { font-family: 'Roboto Mono', monospace; }
 
         /* TABS */
-        .tab-btn { transition: all 0.2s; }
-        .tab-active { background-color: #2563eb; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2); }
-        .tab-inactive { background-color: white; color: #64748b; border: 1px solid #e2e8f0; }
+        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; transition: all 0.2s; }
+        .nav-active { background: #2563eb; color: white; box-shadow: 0 2px 4px rgba(37,99,235,0.3); }
+        .nav-inactive { background: white; color: #6b7280; border: 1px solid #e5e7eb; }
+        .nav-inactive:hover { background: #f9fafb; }
 
+        /* PRIMER / ANNEALING TOOL */
+        #editor-container { position: relative; }
+        ::selection { background: #bfdbfe; color: #1e3a8a; } /* Custom highlight color */
+        
         /* ALIGNMENT */
-        .aln-block { margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px dashed #e2e8f0; }
-        .aln-line { display: flex; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.5; white-space: pre; }
-        .aln-label { width: 120px; flex-shrink: 0; text-align: right; padding-right: 15px; color: #64748b; font-weight: bold; overflow: hidden; text-overflow: ellipsis; }
-        .aln-seq { color: #1e293b; letter-spacing: 0; }
+        .aln-block { margin-bottom: 24px; padding-bottom: 12px; border-bottom: 1px dashed #e5e7eb; }
+        .aln-line { font-family: 'Roboto Mono', monospace; font-size: 12px; line-height: 1.6; white-space: pre; display: flex; }
+        .aln-name { width: 130px; flex-shrink: 0; color: #4b5563; font-weight: bold; text-align: right; padding-right: 15px; overflow: hidden; text-overflow: ellipsis; }
+        .aln-seq { color: #111827; }
+        .ruler-line { color: #6366f1; font-weight: bold; }
         
-        .c-ref { font-weight: bold; color: #0f172a; }
-        .c-match { color: #cbd5e1; } /* Dots */
-        .c-mut { color: #dc2626; background-color: #fef2f2; font-weight: bold; }
-        .c-gap { color: #94a3b8; }
-        
-        /* Ruler Styling */
-        .ruler-seq { color: #6366f1; font-weight: bold; }
-        .ruler-tick { color: #cbd5e1; font-weight: normal; }
+        .c-match { color: #9ca3af; }
+        .c-mut { color: #dc2626; background: #fee2e2; font-weight: bold; padding: 0 1px; }
+        .c-ref { font-weight: bold; color: #111827; }
 
-        /* MASKING */
-        .mask-box { width: 28px; height: 36px; border: 1px solid #e2e8f0; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; border-radius: 4px; }
-        .mask-box:hover { border-color: #3b82f6; }
-        .mask-box.active { background-color: #ef4444; border-color: #f87171; }
-        .mask-box.active span { color: white; text-decoration: line-through; }
+        /* RARE CODON */
+        .codon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(45px, 1fr)); gap: 6px; }
+        .codon-card { background: white; border: 1px solid #e5e7eb; border-radius: 6px; height: 55px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: transform 0.1s; }
+        .codon-card:hover { transform: translateY(-2px); border-color: #3b82f6; }
+        .codon-rare { background: linear-gradient(135deg, #fff1f2 0%, #ffe4e6 100%); border-color: #fda4af; }
+        .codon-rare .cc-seq { color: #be123c; font-weight: bold; }
+        .codon-rare .cc-aa { color: #881337; }
 
-        /* CODON */
-        .codon-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 4px; }
-        .codon-cell { height: 50px; background: white; border: 1px solid #e2e8f0; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .codon-cell.rare { background-color: #fee2e2; border-color: #fca5a5; }
-        .codon-cell.rare .cc-seq { color: #dc2626; font-weight: bold; }
+        /* STICKY BAR for Primer */
+        .sticky-stats { position: sticky; top: 0; z-index: 50; backdrop-filter: blur(8px); background: rgba(255,255,255,0.9); border-bottom: 1px solid #e5e7eb; }
     </style>
 </head>
 <body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
 
-    <header class="mb-6 flex flex-col md:flex-row justify-between items-center gap-4">
+    <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
         <div>
-            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Molecular Workbench <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">v22.0</span>
+            <h1 class="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                🧬 Molecular Workbench <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">v23.0</span>
             </h1>
-            <p class="text-slate-500 text-sm">Corrected: Primer Pair | Align Ruler | Masking Library</p>
+            <p class="text-gray-500 text-xs mt-1">Primer Highlight | Masking Steps | Alignment Ruler Fixed</p>
         </div>
         <nav class="flex gap-2">
-            <button onclick="switchTab('primer')" id="btn-primer" class="tab-btn tab-active px-4 py-2 rounded text-sm font-bold">Primer Pair</button>
-            <button onclick="switchTab('align')" id="btn-align" class="tab-btn tab-inactive px-4 py-2 rounded text-sm font-bold">Alignment</button>
-            <button onclick="switchTab('mask')" id="btn-mask" class="tab-btn tab-inactive px-4 py-2 rounded text-sm font-bold">Masking</button>
-            <button onclick="switchTab('codon')" id="btn-codon" class="tab-btn tab-inactive px-4 py-2 rounded text-sm font-bold">Rare Codon</button>
+            <button onclick="show('primer')" id="btn-primer" class="nav-btn nav-active">Primer Select</button>
+            <button onclick="show('align')" id="btn-align" class="nav-btn nav-inactive">Alignment</button>
+            <button onclick="show('mask')" id="btn-mask" class="nav-btn nav-inactive">Masking</button>
+            <button onclick="show('codon')" id="btn-codon" class="nav-btn nav-inactive">Rare Codon</button>
         </nav>
-    </header>
+    </div>
 
-    <main id="content-primer" class="tool-content">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">🧪 Primer Pair Analyzer</h2>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <main id="view-primer" class="tool-view">
+        <div class="bg-white rounded-xl shadow border border-gray-200 overflow-hidden">
+            <div class="sticky-stats p-4 grid grid-cols-2 md:grid-cols-5 gap-4 text-center">
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">FORWARD PRIMER (5' -> 3')</label>
-                    <input id="fwdInput" type="text" class="w-full p-2 border border-blue-200 rounded font-mono uppercase text-sm mb-2 focus:ring-2 focus:ring-blue-500" placeholder="ATGC..." oninput="analyzePair()">
-                    <div class="bg-slate-50 p-3 rounded border border-slate-200 text-xs">
-                        <div class="flex justify-between"><span>Length:</span> <span id="fLen" class="font-bold">-</span></div>
-                        <div class="flex justify-between"><span>GC%:</span> <span id="fGC" class="font-bold">-</span></div>
-                        <div class="flex justify-between"><span>Tm:</span> <span id="fTm" class="font-bold text-blue-600">-</span></div>
-                    </div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase">Selected Length</div>
+                    <div id="pLen" class="text-xl font-bold text-blue-600 font-mono">0 bp</div>
                 </div>
-
                 <div>
-                    <label class="block text-xs font-bold text-slate-500 mb-1">REVERSE PRIMER (5' -> 3')</label>
-                    <input id="revInput" type="text" class="w-full p-2 border border-purple-200 rounded font-mono uppercase text-sm mb-2 focus:ring-2 focus:ring-purple-500" placeholder="ATGC..." oninput="analyzePair()">
-                    <div class="bg-slate-50 p-3 rounded border border-slate-200 text-xs">
-                        <div class="flex justify-between"><span>Length:</span> <span id="rLen" class="font-bold">-</span></div>
-                        <div class="flex justify-between"><span>GC%:</span> <span id="rGC" class="font-bold">-</span></div>
-                        <div class="flex justify-between"><span>Tm:</span> <span id="rTm" class="font-bold text-purple-600">-</span></div>
-                    </div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase">Melting Temp (Tm)</div>
+                    <div id="pTm" class="text-xl font-bold text-indigo-600 font-mono">-</div>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold text-gray-400 uppercase">GC Content</div>
+                    <div id="pGC" class="text-xl font-bold text-gray-700 font-mono">-</div>
+                </div>
+                <div class="col-span-2 text-left border-l pl-4 border-gray-100 hidden md:block">
+                    <div class="text-[10px] font-bold text-gray-400 uppercase">Reverse Complement (5'-3')</div>
+                    <div id="pRev" class="text-xs font-mono text-gray-600 break-all mt-1 select-all">-</div>
                 </div>
             </div>
 
-            <div class="mt-4 p-4 bg-amber-50 border border-amber-100 rounded flex justify-between items-center">
-                <span class="text-sm font-bold text-amber-800">Tm Difference (ΔTm):</span>
-                <span id="deltaTm" class="text-lg font-mono font-bold text-amber-900">-</span>
+            <div class="p-4 bg-gray-50">
+                <label class="block text-xs font-bold text-gray-500 mb-2">SEQUENCE EDITOR (PASTE & HIGHLIGHT TEXT)</label>
+                <textarea id="seqEditor" 
+                    class="w-full h-96 p-4 border border-gray-300 rounded-lg font-mono text-sm uppercase focus:ring-2 focus:ring-blue-500 outline-none leading-relaxed tracking-wide text-gray-800"
+                    placeholder="PASTE YOUR DNA SEQUENCE HERE AND DRAG TO HIGHLIGHT..."
+                    spellcheck="false"></textarea>
             </div>
-            <p class="text-[10px] text-slate-400 mt-2 text-right">Tm Calculation: Basic Wallace (<14bp) or Baldino (>14bp)</p>
-        </div>
-    </main>
-
-    <main id="content-align" class="tool-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-2">⛓️ Alignment (With Precise Ruler)</h2>
-            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4" 
-placeholder=">Ref
-MKTIIALSYIFCLVFADYKDDDDK
->Mutant1
-MKTIIALSYIFCLVFADYK....."></textarea>
-            <button onclick="runAlign()" class="bg-blue-600 text-white px-6 py-2 rounded text-sm font-bold shadow-sm hover:bg-blue-700">Align</button>
-            
-            <div id="alnOutput" class="hidden mt-6 border-t border-slate-200 pt-4">
-                <div class="overflow-x-auto">
-                    <div id="alnVisual" style="min-width: 1000px;"></div>
-                </div>
+            <div class="px-4 py-2 bg-gray-100 text-[10px] text-gray-500 flex justify-between">
+                <span>Tip: Highlight any region to see instant Primer stats (Annealing simulation).</span>
+                <span id="cursorPos">Cursor: 0</span>
             </div>
         </div>
     </main>
 
-    <main id="content-mask" class="tool-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">🎭 Masking Library Generator</h2>
-            <div class="mb-4">
-                <label class="text-xs font-bold text-slate-500">TARGET SEQUENCE</label>
-                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm" placeholder="PASTE PROTEIN HERE...">
+    <main id="view-align" class="tool-view hidden">
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-2">⛓️ Sequence Alignment</h2>
+            <textarea id="alnInput" class="w-full h-32 p-3 border border-gray-300 rounded font-mono text-xs uppercase mb-4" 
+placeholder=">Reference
+ATGCTAGCTAGCTAG...
+>Mutant_1
+ATGCTAG--AGCTAG..."></textarea>
+            <button onclick="runAlign()" class="bg-indigo-600 text-white px-6 py-2 rounded text-sm font-bold hover:bg-indigo-700">Align Sequences</button>
+            
+            <div id="alnResult" class="hidden mt-6 overflow-x-auto">
+                <div id="alnContainer" style="min-width: 900px;"></div>
             </div>
+        </div>
+    </main>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                    <h3 class="text-xs font-bold text-slate-700 mb-2">Generate Library</h3>
-                    <div class="flex gap-2 mb-2">
-                        <input id="winSize" value="3" class="w-12 text-center text-xs p-1 border rounded" placeholder="Size">
-                        <button onclick="genLibrary('sliding')" class="flex-1 bg-blue-600 text-white text-xs rounded font-bold">Sliding Window</button>
-                        <button onclick="genLibrary('inverse')" class="flex-1 bg-purple-600 text-white text-xs rounded font-bold">Inverse</button>
+    <main id="view-mask" class="tool-view hidden">
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">🎭 Masking Library</h2>
+            <input id="maskInput" class="w-full p-2 border border-gray-300 rounded font-mono uppercase text-sm mb-4" placeholder="PROTEIN SEQUENCE...">
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div class="bg-blue-50 p-4 rounded border border-blue-100">
+                    <div class="text-xs font-bold text-blue-800 mb-2">Sliding Window</div>
+                    <div class="flex gap-2 items-center mb-2">
+                        <input id="winSize" value="3" class="w-12 text-center text-xs p-1 rounded border" placeholder="Win">
+                        <span class="text-xs text-blue-600">Size</span>
+                        <input id="stepSize" value="1" class="w-12 text-center text-xs p-1 rounded border" placeholder="Step">
+                        <span class="text-xs text-blue-600">Step</span>
                     </div>
-                    <div class="flex gap-2">
-                         <input id="targetRes" value="K,C" class="w-12 text-center text-xs p-1 border rounded" placeholder="K,C">
-                         <button onclick="genLibrary('target')" class="flex-1 bg-slate-600 text-white text-xs rounded font-bold">Target Residues</button>
-                    </div>
+                    <button onclick="genMask('slide')" class="w-full bg-blue-600 text-white text-xs py-1 rounded font-bold">Generate</button>
                 </div>
                 
-                <div class="bg-slate-50 p-3 rounded border border-slate-200">
-                    <h3 class="text-xs font-bold text-slate-700 mb-2">Manual Select</h3>
-                    <button onclick="showClicker()" class="w-full bg-slate-400 text-white text-xs py-1 rounded font-bold mb-2">Open Grid</button>
-                    <div id="clickerArea" class="hidden"></div>
+                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                    <div class="text-xs font-bold text-gray-700 mb-2">Target Residues</div>
+                    <input id="targetRes" value="K,C" class="w-full text-xs p-1 rounded border mb-2 uppercase">
+                    <button onclick="genMask('target')" class="w-full bg-gray-600 text-white text-xs py-1 rounded font-bold">Mask Targets</button>
+                </div>
+
+                <div class="bg-gray-50 p-4 rounded border border-gray-200">
+                    <div class="text-xs font-bold text-gray-700 mb-2">Result Actions</div>
+                    <button onclick="copyMask()" id="btnCopyMask" class="w-full h-full bg-green-600 text-white text-xs rounded font-bold hover:bg-green-700 flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3"></path></svg>
+                        Copy All
+                    </button>
                 </div>
             </div>
-
-            <div class="border-t pt-4">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold">Generated Library (<span id="libCount">0</span>)</span>
-                    <button onclick="copyLibrary()" id="btnCopyLib" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1 rounded text-xs font-bold">Copy All</button>
-                </div>
-                <textarea id="maskOutput" class="w-full h-48 p-2 bg-slate-50 border border-slate-200 rounded font-mono text-xs leading-tight" readonly></textarea>
+            
+            <div class="relative">
+                <span class="absolute top-2 right-2 text-xs font-bold text-gray-400" id="maskCount">0 seqs</span>
+                <textarea id="maskOutput" class="w-full h-48 p-2 bg-gray-50 border border-gray-200 rounded font-mono text-xs leading-relaxed text-gray-600" readonly></textarea>
             </div>
         </div>
     </main>
 
-    <main id="content-codon" class="tool-content hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+    <main id="view-codon" class="tool-view hidden">
+        <div class="bg-white rounded-xl shadow border border-gray-200 p-6">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-800">🦠 Rare Codon Map</h2>
-                <span class="text-[10px] bg-yellow-300 text-yellow-900 px-2 py-1 rounded font-bold">Ref: E. coli K12 (Kazusa)</span>
+                <h2 class="text-lg font-bold text-gray-800">🦠 Rare Codon Map</h2>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-100 border border-red-300 block"></span>
+                    <span class="text-xs text-gray-500">Rare (<10%)</span>
+                    <span class="text-[10px] bg-yellow-100 text-yellow-800 px-2 py-1 rounded font-bold border border-yellow-200 ml-2">Ref: E. coli K12</span>
+                </div>
             </div>
-            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-xs uppercase h-24 mb-4" placeholder="DNA SEQUENCE..." oninput="analyzeCodons()"></textarea>
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-lg">
-                <div id="codonGrid" class="codon-grid"></div>
+            <textarea id="codonInput" class="w-full p-4 border border-gray-200 rounded-lg font-mono text-sm uppercase h-28 mb-6 focus:ring-2 focus:ring-pink-500 outline-none" placeholder="PASTE DNA SEQUENCE..." oninput="analyzeCodon()"></textarea>
+            
+            <div class="bg-gray-50 p-6 rounded-xl border border-gray-200 min-h-[150px]">
+                <div id="codonVisual" class="codon-grid"></div>
             </div>
         </div>
     </main>
 
     <script>
-        // --- TABS ---
-        function switchTab(t) {
-            document.querySelectorAll('.tool-content').forEach(e => e.classList.add('hidden'));
-            document.getElementById('content-'+t).classList.remove('hidden');
-            ['primer','align','mask','codon'].forEach(x => {
-                const btn = document.getElementById('btn-'+x);
-                btn.className = (x===t) ? 'tab-btn tab-active px-4 py-2 rounded text-sm font-bold' : 'tab-btn tab-inactive px-4 py-2 rounded text-sm font-bold';
+        // --- CORE NAVIGATION ---
+        function show(id) {
+            document.querySelectorAll('.tool-view').forEach(e => e.classList.add('hidden'));
+            document.getElementById('view-'+id).classList.remove('hidden');
+            ['primer','align','mask','codon'].forEach(k => {
+                document.getElementById('btn-'+k).className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
             });
         }
 
-        // ===========================================
-        // 1. PRIMER PAIR (Corrected)
-        // ===========================================
-        function getTm(seq) {
-            if(!seq) return 0;
-            const len = seq.length;
-            const gc = (seq.match(/[GC]/g)||[]).length;
-            if(len < 14) return (gc*4) + ((len-gc)*2);
-            return 64.9 + 41*(gc-16.4)/len;
-        }
+        // ============================================
+        // 1. PRIMER (HIGHLIGHT & ANALYZE)
+        // ============================================
+        const editor = document.getElementById('seqEditor');
+        
+        // Listen to selection changes
+        ['mouseup', 'keyup', 'selectionchange'].forEach(evt => 
+            editor.addEventListener(evt, handleSelection)
+        );
 
-        function analyzePair() {
-            const fwd = document.getElementById('fwdInput').value.toUpperCase().replace(/[^ATGC]/g,'');
-            const rev = document.getElementById('revInput').value.toUpperCase().replace(/[^ATGC]/g,'');
+        function handleSelection() {
+            const start = editor.selectionStart;
+            const end = editor.selectionEnd;
+            document.getElementById('cursorPos').innerText = `Cursor: ${end}`;
 
-            // Analyze FWD
-            if(fwd) {
-                const fTm = getTm(fwd);
-                document.getElementById('fLen').innerText = fwd.length;
-                document.getElementById('fGC').innerText = (( (fwd.match(/[GC]/g)||[]).length / fwd.length)*100).toFixed(1) + "%";
-                document.getElementById('fTm').innerText = fTm.toFixed(1) + "°C";
-            } else { ['fLen','fGC','fTm'].forEach(i=>document.getElementById(i).innerText='-'); }
-
-            // Analyze REV
-            if(rev) {
-                const rTm = getTm(rev);
-                document.getElementById('rLen').innerText = rev.length;
-                document.getElementById('rGC').innerText = (( (rev.match(/[GC]/g)||[]).length / rev.length)*100).toFixed(1) + "%";
-                document.getElementById('rTm').innerText = rTm.toFixed(1) + "°C";
-            } else { ['rLen','rGC','rTm'].forEach(i=>document.getElementById(i).innerText='-'); }
-
-            // Delta Tm
-            if(fwd && rev) {
-                const d = Math.abs(getTm(fwd) - getTm(rev));
-                document.getElementById('deltaTm').innerText = d.toFixed(1) + "°C";
-                document.getElementById('deltaTm').className = d > 5 ? "text-lg font-mono font-bold text-red-600" : "text-lg font-mono font-bold text-green-600";
-            } else {
-                document.getElementById('deltaTm').innerText = "-";
+            const text = editor.value.substring(start, end).replace(/[^A-Za-z]/g, '').toUpperCase();
+            
+            if (text.length === 0) {
+                // Reset if no selection
+                document.getElementById('pLen').innerText = "0 bp";
+                document.getElementById('pTm').innerText = "-";
+                document.getElementById('pGC').innerText = "-";
+                document.getElementById('pRev').innerText = "-";
+                return;
             }
+
+            // Calculation
+            const len = text.length;
+            const gcCount = (text.match(/[GC]/g) || []).length;
+            const gcPerc = ((gcCount / len) * 100).toFixed(1);
+            
+            // Tm (Wallace < 14, Baldino >= 14)
+            let tm = 0;
+            if (len < 14) tm = (gcCount * 4) + ((len - gcCount) * 2);
+            else tm = 64.9 + 41 * (gcCount - 16.4) / len;
+
+            // Rev Comp
+            const revComp = text.split('').reverse().map(c => {
+                return {'A':'T','T':'A','G':'C','C':'G','N':'N'}[c] || c;
+            }).join('');
+
+            // Update UI
+            document.getElementById('pLen').innerText = `${len} bp`;
+            document.getElementById('pTm').innerText = `${tm.toFixed(1)} °C`;
+            document.getElementById('pGC').innerText = `${gcPerc}%`;
+            document.getElementById('pRev').innerText = revComp;
         }
 
-        // ===========================================
-        // 2. ALIGNMENT (Precise Ruler)
-        // ===========================================
+        // ============================================
+        // 2. ALIGNMENT (PURE STRING RULER)
+        // ============================================
         function runAlign() {
             const raw = document.getElementById('alnInput').value;
             const lines = raw.split('\n');
-            let seqs=[]; let curr={n:'',s:''};
-            lines.forEach(l=>{
-                l=l.trim();
-                if(l.startsWith('>')){ if(curr.n) seqs.push(curr); curr={n:l.substring(1),s:''}; }
-                else curr.s+=l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
+            let seqs=[], curr={n:'',s:''};
+            
+            lines.forEach(l => {
+                l = l.trim();
+                if(l.startsWith('>')) { if(curr.n) seqs.push(curr); curr={n:l.substring(1),s:''}; }
+                else curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
             });
             if(curr.n) seqs.push(curr);
-            if(seqs.length===0) seqs=[{n:'Seq',s:raw.replace(/[^A-Z]/gi,'').toUpperCase()}];
+            if(!seqs.length) seqs=[{n:'Seq',s:raw.replace(/[^A-Z]/gi,'').toUpperCase()}];
 
             const ref = seqs[0].s;
             const width = 100;
             let html = "";
 
             for(let i=0; i<ref.length; i+=width) {
-                // 1. Build Ruler String (Exact match to width)
-                let rulerStr = "";
-                for(let k=0; k<width; k++) {
-                    let pos = i + k + 1;
-                    if(pos > ref.length) break;
+                // Build Ruler as a String Array
+                let rulerArr = Array(width).fill(' '); 
+                
+                // 1. Fill ticks
+                for(let k=4; k<width; k+=5) rulerArr[k] = '|'; // 5th pos (index 4)
+                
+                // 2. Fill Numbers (Right-aligned to the tick)
+                for(let k=9; k<width; k+=10) {
+                    let realPos = i + k + 1;
+                    if(realPos > ref.length) break;
+                    let numStr = realPos.toString();
                     
-                    // Logic: Print last digit if mod 10, print | if mod 5, else .
-                    if(pos % 10 === 0) rulerStr += `<span class="ruler-seq">${pos%10}</span>`; 
-                    else if (pos % 5 === 0) rulerStr += `<span class="ruler-tick">|</span>`;
-                    else rulerStr += `<span class="ruler-tick">.</span>`;
+                    // Insert number ending at k
+                    for(let c=0; c<numStr.length; c++) {
+                        let insertIdx = k - numStr.length + 1 + c;
+                        if(insertIdx >= 0 && insertIdx < width) {
+                            rulerArr[insertIdx] = numStr[c];
+                        }
+                    }
                 }
+                // Handle first index '1'
+                if(i===0) rulerArr[0] = '1';
+
+                const rulerStr = rulerArr.join('');
 
                 html += `<div class="aln-block">`;
+                html += `<div class="aln-line"><div class="aln-name"></div><div class="aln-seq ruler-line">${rulerStr}</div></div>`;
                 
-                // Render Ruler Row
-                html += `<div class="aln-line">
-                    <div class="aln-label">Pos (${i+1})</div>
-                    <div class="aln-seq">${rulerStr}</div>
-                </div>`;
-
-                // Render Sequences
-                seqs.forEach((s, idx) => {
-                    let chunk = s.s.substr(i, width);
+                seqs.forEach((obj, idx) => {
+                    const chunk = obj.s.substr(i, width);
                     let vis = "";
-                    for(let k=0; k<chunk.length; k++) {
-                        let c = chunk[k];
-                        let r = ref[i+k];
-                        if(idx===0) vis += `<span class="c-ref">${c}</span>`;
+                    for(let x=0; x<chunk.length; x++) {
+                        let c = chunk[x];
+                        let r = ref[i+x];
+                        if(idx === 0) vis += `<span class="c-ref">${c}</span>`;
                         else {
                             if(c===r && c!=='-') vis += `<span class="c-match">.</span>`;
-                            else if(c==='-') vis += `<span class="c-gap">-</span>`;
+                            else if(c==='-') vis += `<span class="c-mut">-</span>`; // Gap in mutant usually important
                             else vis += `<span class="c-mut">${c}</span>`;
                         }
                     }
-                    html += `<div class="aln-line">
-                        <div class="aln-label" title="${s.n}">${s.n}</div>
-                        <div class="aln-seq">${vis}</div>
-                    </div>`;
+                    html += `<div class="aln-line"><div class="aln-name" title="${obj.n}">${obj.n}</div><div class="aln-seq">${vis}</div></div>`;
                 });
-
                 html += `</div>`;
             }
-            document.getElementById('alnVisual').innerHTML = html;
-            document.getElementById('alnOutput').classList.remove('hidden');
+            document.getElementById('alnContainer').innerHTML = html;
+            document.getElementById('alnResult').classList.remove('hidden');
         }
 
-        // ===========================================
-        // 3. MASKING (Library Generator)
-        // ===========================================
-        function genLibrary(mode) {
-            const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
+        // ============================================
+        // 3. MASKING (WITH STEP)
+        // ============================================
+        function genMask(mode) {
+            const seq = document.getElementById('maskInput').value.trim().toUpperCase();
             if(!seq) return;
-            const win = parseInt(document.getElementById('winSize').value) || 3;
-            let list = [];
-
-            if(mode === 'sliding') {
-                for(let i=0; i<=seq.length-win; i++) {
-                    list.push(seq.substring(0,i) + "_".repeat(win) + seq.substring(i+win));
-                }
-            } else if (mode === 'inverse') {
-                const keep = parseInt(document.getElementById('winSize').value) || 5; // Reusing input box logic
-                for(let i=0; i<=seq.length-keep; i++) {
-                    list.push("_".repeat(i) + seq.substring(i,i+keep) + "_".repeat(seq.length-(i+keep)));
+            
+            let res = [];
+            
+            if(mode === 'slide') {
+                const win = parseInt(document.getElementById('winSize').value) || 3;
+                const step = parseInt(document.getElementById('stepSize').value) || 1;
+                
+                for(let i=0; i <= seq.length - win; i += step) {
+                    let masked = seq.substring(0,i) + "_".repeat(win) + seq.substring(i+win);
+                    res.push(masked);
                 }
             } else if (mode === 'target') {
-                const t = document.getElementById('targetRes').value.toUpperCase().split(',');
+                const targets = document.getElementById('targetRes').value.toUpperCase().split(',');
                 let s = seq;
-                t.forEach(c => { if(c.trim()) s = s.replaceAll(c.trim(), '_'); });
-                list.push(s);
+                targets.forEach(t => { if(t.trim()) s = s.replaceAll(t.trim(), '_'); });
+                res.push(s);
             }
-
-            document.getElementById('maskOutput').value = list.join('\n');
-            document.getElementById('libCount').innerText = list.length;
+            
+            const txt = document.getElementById('maskOutput');
+            txt.value = res.join('\n');
+            document.getElementById('maskCount').innerText = `${res.length} seqs`;
         }
 
-        function copyLibrary() {
-            const ta = document.getElementById('maskOutput');
-            ta.select();
+        function copyMask() {
+            const el = document.getElementById('maskOutput');
+            el.select();
             document.execCommand('copy');
-            const b = document.getElementById('btnCopyLib');
-            b.innerText = "COPIED!"; setTimeout(()=>b.innerText="Copy All",1000);
+            const btn = document.getElementById('btnCopyMask');
+            const original = btn.innerHTML;
+            btn.innerHTML = "✅ Copied!";
+            setTimeout(() => btn.innerHTML = original, 1500);
         }
 
-        function showClicker() {
-            const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
-            if(!seq) return;
-            const area = document.getElementById('clickerArea');
-            area.classList.remove('hidden');
-            let h = `<div class="flex flex-wrap gap-1 mb-2 bg-slate-100 p-2 rounded border">`;
-            seq.split('').forEach((c,i) => {
-                h += `<div class="mask-box" onclick="this.classList.toggle('active')"><span>${c}</span><div class="text-[8px] text-slate-400">${i+1}</div></div>`;
-            });
-            h += `</div><button onclick="addManual()" class="bg-slate-600 text-white text-xs px-2 py-1 rounded">Add Pattern to List</button>`;
-            area.innerHTML = h;
-        }
-
-        function addManual() {
-            const boxes = document.querySelectorAll('.mask-box');
-            let s = "";
-            boxes.forEach(b => s += b.classList.contains('active') ? '_' : b.querySelector('span').innerText);
-            
-            const ta = document.getElementById('maskOutput');
-            ta.value = (ta.value ? ta.value + "\n" : "") + s;
-            document.getElementById('libCount').innerText = ta.value.split('\n').filter(x=>x).length;
-        }
-
-        // ===========================================
-        // 4. RARE CODON (V16)
-        // ===========================================
-        function analyzeCodons() {
+        // ============================================
+        // 4. RARE CODON (POLISHED)
+        // ============================================
+        function analyzeCodon() {
             const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
-            const map={'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
-            const usage={'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
+            const map = {'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
+            // Kazusa E.coli K12 usage
+            const usage = {'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
             
-            // Calc Max
+            // Calculate Max freq for each AA
             let maxF={}; for(let c in map) { let a=map[c]; if(!maxF[a] || usage[c]>maxF[a]) maxF[a]=usage[c]; }
 
-            let h="";
+            let h = "";
             for(let i=0; i<dna.length; i+=3) {
                 let c = dna.substr(i,3);
                 if(c.length<3) break;
                 let aa = map[c]||'?';
-                let rare = ((usage[c]||0) / (maxF[aa]||1)) < 0.10;
-                if(aa==='M'||aa==='W') rare=false;
-                
-                h += `<div class="codon-cell ${rare?'rare':''}">
-                    <div class="text-[9px] font-bold text-slate-500">${aa}</div>
-                    <div class="cc-seq text-[10px] font-mono">${c}</div>
-                    <div class="text-[8px] text-slate-300 mt-1">${i+1}</div>
+                let isRare = ((usage[c]||0)/(maxF[aa]||1)) < 0.10; // < 10% adaptiveness
+                if(aa==='M'||aa==='W') isRare=false; // Exceptions
+
+                h += `<div class="codon-card ${isRare?'codon-rare':''}" title="Usage: ${usage[c]||0}">
+                    <div class="cc-aa text-[10px] font-bold text-gray-400">${aa}</div>
+                    <div class="cc-seq text-xs font-mono text-gray-800">${c}</div>
+                    <div class="text-[8px] text-gray-300 mt-1">${i+1}</div>
                 </div>`;
             }
-            document.getElementById('codonGrid').innerHTML = h;
+            document.getElementById('codonVisual').innerHTML = h;
         }
     </script>
 </body>
