@@ -8,20 +8,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
 
 <style>
-body {
-  font-family: 'Inter', sans-serif;
-  transition: all 0.3s ease;
-}
-.glass {
-  backdrop-filter: blur(12px);
-}
-.fade {
-  animation: fadeIn 0.3s ease;
-}
-@keyframes fadeIn {
-  from {opacity:0; transform:translateY(6px);}
-  to {opacity:1; transform:translateY(0);}
-}
+body { font-family: 'Inter', sans-serif; }
+.glass { backdrop-filter: blur(12px); }
 .nav-btn {
   padding: 8px 14px;
   border-radius: 10px;
@@ -29,120 +17,72 @@ body {
   box-shadow: 0 2px 6px rgba(0,0,0,0.05);
   transition: 0.2s;
 }
-.nav-btn:hover {
-  transform: translateY(-1px);
+.nav-btn.active {
+  background: #4f46e5;
+  color: white;
 }
-
-/* COPY ANIMATION */
 .copy-success {
   background: #22c55e !important;
   color: white !important;
-  transform: scale(0.95);
 }
 </style>
 </head>
 
-<body id="body" class="bg-slate-100 text-slate-800 min-h-screen">
+<body class="bg-slate-100 text-slate-800 min-h-screen">
 
 <div class="max-w-6xl mx-auto p-8">
 
-<!-- HEADER -->
-<div class="flex justify-between items-center mb-8">
-  <div>
-    <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
-    <p class="text-sm opacity-60">Bioengineering Workbench</p>
-  </div>
-  <button onclick="toggleDark()" class="nav-btn">🌙</button>
+<h1 class="text-2xl font-semibold mb-6">🧬 Pa1oLAB</h1>
+
+<div class="glass bg-white/70 rounded-2xl shadow-xl p-6">
+
+<h2 class="text-lg font-semibold mb-4 text-center">🎭 Masking Engine</h2>
+
+<input id="maskInput"
+  class="w-full max-w-xl mx-auto block p-3 border rounded-xl font-mono text-sm mb-6 text-center"
+  placeholder="Paste protein sequence...">
+
+<!-- MODE -->
+<div class="flex justify-center gap-3 mb-3">
+  <button id="btnManual" onclick="setMode('manual')" class="nav-btn active">Manual</button>
+  <button id="btnSlide" onclick="setMode('slide')" class="nav-btn">Sliding</button>
 </div>
 
-<!-- NAV -->
-<div class="flex gap-2 mb-6">
-  <button onclick="show('po')" class="nav-btn">Purchase</button>
-  <button onclick="show('align')" class="nav-btn">Alignment</button>
-  <button onclick="show('eng')" class="nav-btn">Engineering</button>
-  <button onclick="show('mask')" class="nav-btn">Masking</button>
-</div>
+<p id="modeLabel" class="text-center text-xs text-slate-500 mb-6">
+  Current Mode: Manual
+</p>
 
-<!-- CARD -->
-<div id="card" class="glass bg-white/70 rounded-2xl shadow-xl p-6">
-
-<!-- PURCHASE -->
-<div id="po" class="view fade">
-  <h2 class="text-lg font-semibold mb-2">💰 Purchase Order</h2>
-  <p class="text-sm opacity-60">Google Sheet integration coming soon</p>
-</div>
-
-<!-- ALIGNMENT -->
-<div id="align" class="view hidden">
-  <h2 class="text-lg font-semibold mb-4">🧬 Alignment</h2>
-
-  <textarea id="seq"
-    class="w-full p-3 border rounded-xl font-mono text-sm"
-    placeholder="Paste sequence..."></textarea>
-
-  <div id="output" class="mt-4 font-mono text-sm"></div>
-</div>
-
-<!-- ENGINEERING -->
-<div id="eng" class="view hidden">
-  <h2 class="text-lg font-semibold">🧬 Engineering</h2>
-  <p class="text-sm opacity-60 mt-2">Coming soon</p>
-</div>
-
-<!-- MASKING -->
-<div id="mask" class="view hidden">
-
-  <h2 class="text-lg font-semibold mb-6 text-center">🎭 Masking Engine</h2>
-
-  <input id="maskInput"
-    class="w-full max-w-xl mx-auto block p-3 border rounded-xl font-mono text-sm mb-6 text-center"
-    placeholder="Paste protein sequence...">
-
-  <!-- MODE -->
-  <div class="flex justify-center gap-3 mb-6">
-    <button onclick="setMode('slide')" class="nav-btn">Sliding</button>
-    <button onclick="setMode('manual')" class="nav-btn">Manual</button>
+<!-- CONTROL -->
+<div class="flex justify-center items-center gap-4 mb-6 text-sm">
+  <div class="flex items-center gap-1">
+    <span class="text-xs">Window</span>
+    <input id="winVal" type="number" value="5" class="w-16 p-1 border rounded text-center">
   </div>
 
-  <!-- CONTROL -->
-  <div class="flex justify-center items-center gap-4 mb-6 text-sm">
+  <div class="flex items-center gap-1">
+    <span class="text-xs">Step</span>
+    <input id="stepVal" type="number" value="1" class="w-16 p-1 border rounded text-center">
+  </div>
 
-    <div class="flex items-center gap-1">
-      <span class="text-slate-500 text-xs">Window</span>
-      <input id="winVal" type="number" value="5"
-        class="w-16 p-1 border rounded text-center">
-    </div>
+  <button onclick="generateAll()" class="bg-indigo-600 text-white px-4 py-2 rounded-xl">
+    Generate
+  </button>
+</div>
 
-    <div class="flex items-center gap-1">
-      <span class="text-slate-500 text-xs">Step</span>
-      <input id="stepVal" type="number" value="1"
-        class="w-16 p-1 border rounded text-center">
-    </div>
+<!-- GRID -->
+<div id="grid" class="flex flex-wrap gap-2 justify-center mb-6"></div>
 
-    <button onclick="generateLib()"
-      class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm">
-      Generate
+<!-- OUTPUT -->
+<div class="bg-slate-100 p-4 rounded-xl">
+
+  <div class="flex justify-between mb-2">
+    <span class="text-xs text-slate-500">Library Output (All)</span>
+    <button onclick="copyAll(this)" class="text-xs bg-indigo-600 text-white px-3 py-1 rounded">
+      Copy All
     </button>
-
   </div>
 
-  <!-- GRID -->
-  <div id="grid" class="flex flex-wrap gap-2 justify-center mb-6"></div>
-
-  <!-- OUTPUT -->
-  <div class="bg-slate-100 p-4 rounded-xl">
-
-    <div class="flex justify-between items-center mb-2">
-      <span class="text-xs text-slate-500">Library Output</span>
-      <button id="copyAllBtn" onclick="copyAll(this)"
-        class="text-xs bg-indigo-600 text-white px-3 py-1 rounded">
-        Copy All
-      </button>
-    </div>
-
-    <div id="libList" class="space-y-2 max-h-48 overflow-y-auto"></div>
-
-  </div>
+  <div id="libList" class="space-y-2 max-h-56 overflow-y-auto"></div>
 
 </div>
 
@@ -151,55 +91,23 @@ body {
 
 <script>
 
-/* NAV */
-function show(id){
-  document.querySelectorAll('.view').forEach(v=>{
-    v.classList.add('hidden')
-    v.classList.remove('fade')
-  })
-  const el = document.getElementById(id)
-  el.classList.remove('hidden')
-  el.classList.add('fade')
-}
-
-/* DARK MODE */
-function toggleDark(){
-  const body = document.getElementById("body")
-  const card = document.getElementById("card")
-
-  if(body.classList.contains("bg-slate-900")){
-    body.className = "bg-slate-100 text-slate-800 min-h-screen"
-    card.className = "glass bg-white/70 rounded-2xl shadow-xl p-6"
-    localStorage.setItem("theme","light")
-  } else {
-    body.className = "bg-slate-900 text-slate-100 min-h-screen"
-    card.className = "glass bg-slate-800/70 rounded-2xl shadow-xl p-6"
-    localStorage.setItem("theme","dark")
-  }
-}
-
-window.onload = () => {
-  if(localStorage.getItem("theme")==="dark"){
-    toggleDark()
-  }
-}
-
-/* ALIGN */
-document.getElementById("seq").addEventListener("input", e=>{
-  const s = e.target.value
-  let html = ""
-  for(let i=0;i<s.length;i++){
-    html += `<span title="Position ${i+1}" class="inline-block w-5 text-center hover:bg-indigo-500 hover:text-white rounded">${s[i]}</span>`
-  }
-  document.getElementById("output").innerHTML = html
-})
-
-/* MASK ENGINE */
 let mode = "manual"
 let sequence = ""
 let manualMask = []
 
-function setMode(m){ mode = m }
+let combinedLib = new Set()
+
+function setMode(m){
+  mode = m
+  document.getElementById("modeLabel").innerText =
+    "Current Mode: " + (m==="manual"?"Manual":"Sliding")
+
+  document.getElementById("btnManual").classList.remove("active")
+  document.getElementById("btnSlide").classList.remove("active")
+
+  if(m==="manual") document.getElementById("btnManual").classList.add("active")
+  else document.getElementById("btnSlide").classList.add("active")
+}
 
 document.getElementById("maskInput").addEventListener("input", e=>{
   sequence = e.target.value.toUpperCase()
@@ -233,43 +141,41 @@ function renderGrid(){
   })
 }
 
-function generateLib(){
-  let lib = []
+function generateAll(){
 
-  if(mode === "manual"){
+  // Manual
+  if(manualMask.length > 0){
     let arr = sequence.split("")
-    manualMask.forEach(i => arr[i] = "_")
-    lib.push(arr.join(""))
+    manualMask.forEach(i=> arr[i]="_")
+    combinedLib.add(arr.join(""))
   }
 
-  if(mode === "slide"){
-    let w = parseInt(document.getElementById("winVal").value)
-    let s = parseInt(document.getElementById("stepVal").value)
+  // Sliding
+  let w = parseInt(document.getElementById("winVal").value)
+  let s = parseInt(document.getElementById("stepVal").value)
 
-    for(let i=0;i<=sequence.length-w;i+=s){
-      let arr = sequence.split("")
-      for(let j=0;j<w;j++){
-        arr[i+j] = "_"
-      }
-      lib.push(arr.join(""))
+  for(let i=0;i<=sequence.length-w;i+=s){
+    let arr = sequence.split("")
+    for(let j=0;j<w;j++){
+      arr[i+j]="_"
     }
+    combinedLib.add(arr.join(""))
   }
 
-  renderList(lib)
+  renderList()
 }
 
-function renderList(lib){
+function renderList(){
   const container = document.getElementById("libList")
   container.innerHTML = ""
 
-  lib.forEach((seq)=>{
+  combinedLib.forEach(seq=>{
     const row = document.createElement("div")
     row.className = "flex justify-between items-center bg-white p-2 rounded border"
 
     row.innerHTML = `
       <span class="font-mono text-xs truncate">${seq}</span>
-      <button onclick="copyOne(this,'${seq}')"
-        class="text-xs bg-slate-200 px-2 py-1 rounded">
+      <button onclick="copyOne(this,'${seq}')" class="text-xs bg-slate-200 px-2 py-1 rounded">
         Copy
       </button>
     `
@@ -277,25 +183,19 @@ function renderList(lib){
   })
 }
 
-/* COPY */
 function copyAll(btn){
-  const rows = document.querySelectorAll("#libList span")
-  let all = ""
-  rows.forEach(r=> all += r.innerText + "\\n")
-
-  navigator.clipboard.writeText(all)
-  animateCopy(btn)
+  navigator.clipboard.writeText(Array.from(combinedLib).join("\\n"))
+  animate(btn)
 }
 
 function copyOne(btn,seq){
   navigator.clipboard.writeText(seq)
-  animateCopy(btn)
+  animate(btn)
 }
 
-function animateCopy(btn){
+function animate(btn){
   btn.classList.add("copy-success")
   btn.innerText = "Copied ✓"
-
   setTimeout(()=>{
     btn.classList.remove("copy-success")
     btn.innerText = "Copy"
