@@ -12,11 +12,9 @@ body {
   font-family: 'Inter', sans-serif;
   transition: all 0.3s ease;
 }
-
 .glass {
   backdrop-filter: blur(12px);
 }
-
 .fade {
   animation: fadeIn 0.3s ease;
 }
@@ -24,7 +22,6 @@ body {
   from {opacity:0; transform:translateY(6px);}
   to {opacity:1; transform:translateY(0);}
 }
-
 .nav-btn {
   padding: 8px 14px;
   border-radius: 10px;
@@ -48,7 +45,6 @@ body {
     <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
     <p class="text-sm opacity-60">Bioengineering Workbench</p>
   </div>
-
   <button onclick="toggleDark()" class="nav-btn">🌙</button>
 </div>
 
@@ -60,8 +56,228 @@ body {
   <button onclick="show('mask')" class="nav-btn">Masking</button>
 </div>
 
-<!-- MAIN CARD -->
+<!-- CARD -->
 <div id="card" class="glass bg-white/70 rounded-2xl shadow-xl p-6">
+
+<!-- PURCHASE -->
+<div id="po" class="view fade">
+  <h2 class="text-lg font-semibold mb-2">💰 Purchase Order</h2>
+  <p class="text-sm opacity-60">Google Sheet integration coming soon</p>
+</div>
+
+<!-- ALIGNMENT -->
+<div id="align" class="view hidden">
+  <h2 class="text-lg font-semibold mb-4">🧬 Alignment</h2>
+
+  <textarea id="seq"
+    class="w-full p-3 border rounded-xl font-mono text-sm"
+    placeholder="Paste sequence..."></textarea>
+
+  <div id="output" class="mt-4 font-mono text-sm"></div>
+</div>
+
+<!-- ENGINEERING -->
+<div id="eng" class="view hidden">
+  <h2 class="text-lg font-semibold">🧬 Engineering</h2>
+  <p class="text-sm opacity-60 mt-2">Mutation + Codon (coming soon)</p>
+</div>
+
+<!-- MASKING -->
+<div id="mask" class="view hidden">
+
+  <h2 class="text-lg font-semibold mb-6 text-center">🎭 Masking Engine</h2>
+
+  <input id="maskInput"
+    class="w-full max-w-xl mx-auto block p-3 border rounded-xl font-mono text-sm mb-6 text-center"
+    placeholder="Paste protein sequence...">
+
+  <!-- MODE -->
+  <div class="flex justify-center gap-3 mb-6">
+    <button onclick="setMode('every')" class="nav-btn">Every N</button>
+    <button onclick="setMode('slide')" class="nav-btn">Sliding</button>
+  </div>
+
+  <!-- CONTROL -->
+  <div class="flex justify-center items-center gap-4 mb-6 text-sm">
+
+    <div class="flex items-center gap-1">
+      <span class="text-slate-500 text-xs">N</span>
+      <input id="nVal" type="number" value="3"
+        class="w-16 p-1 border rounded text-center">
+    </div>
+
+    <div class="flex items-center gap-1">
+      <span class="text-slate-500 text-xs">Window</span>
+      <input id="winVal" type="number" value="5"
+        class="w-16 p-1 border rounded text-center">
+    </div>
+
+    <div class="flex items-center gap-1">
+      <span class="text-slate-500 text-xs">Step</span>
+      <input id="stepVal" type="number" value="1"
+        class="w-16 p-1 border rounded text-center">
+    </div>
+
+    <button onclick="generateLib()"
+      class="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm">
+      Generate
+    </button>
+
+  </div>
+
+  <!-- GRID -->
+  <div id="grid" class="flex flex-wrap gap-2 justify-center mb-6"></div>
+
+  <!-- OUTPUT -->
+  <div class="bg-slate-100 p-4 rounded-xl">
+
+    <div class="flex justify-between items-center mb-2">
+      <span class="text-xs text-slate-500">Library Output</span>
+      <button onclick="copyAll()"
+        class="text-xs bg-indigo-600 text-white px-3 py-1 rounded">
+        Copy All
+      </button>
+    </div>
+
+    <div id="libList" class="space-y-2 max-h-48 overflow-y-auto"></div>
+
+  </div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+/* NAV */
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>{
+    v.classList.add('hidden')
+    v.classList.remove('fade')
+  })
+  const el = document.getElementById(id)
+  el.classList.remove('hidden')
+  el.classList.add('fade')
+}
+
+/* DARK MODE */
+function toggleDark(){
+  const body = document.getElementById("body")
+  const card = document.getElementById("card")
+
+  if(body.classList.contains("bg-slate-900")){
+    body.className = "bg-slate-100 text-slate-800 min-h-screen"
+    card.className = "glass bg-white/70 rounded-2xl shadow-xl p-6"
+    localStorage.setItem("theme","light")
+  } else {
+    body.className = "bg-slate-900 text-slate-100 min-h-screen"
+    card.className = "glass bg-slate-800/70 rounded-2xl shadow-xl p-6"
+    localStorage.setItem("theme","dark")
+  }
+}
+
+window.onload = () => {
+  if(localStorage.getItem("theme")==="dark"){
+    toggleDark()
+  }
+}
+
+/* ALIGNMENT */
+document.getElementById("seq").addEventListener("input", e=>{
+  const s = e.target.value
+  let html = ""
+  for(let i=0;i<s.length;i++){
+    html += `<span title="Position ${i+1}" class="inline-block w-5 text-center hover:bg-indigo-500 hover:text-white rounded">${s[i]}</span>`
+  }
+  document.getElementById("output").innerHTML = html
+})
+
+/* MASK ENGINE */
+let mode = "every"
+let sequence = ""
+
+function setMode(m){ mode = m }
+
+document.getElementById("maskInput").addEventListener("input", e=>{
+  sequence = e.target.value.toUpperCase()
+  renderGrid()
+})
+
+function renderGrid(){
+  const grid = document.getElementById("grid")
+  grid.innerHTML = ""
+
+  sequence.split("").forEach((aa,i)=>{
+    const box = document.createElement("div")
+    box.className = "w-12 h-14 rounded-xl border flex flex-col items-center justify-center text-sm"
+    box.innerHTML = `<b>${aa}</b><span class="text-[10px]">${i+1}</span>`
+    grid.appendChild(box)
+  })
+}
+
+function generateLib(){
+  let lib = []
+
+  if(mode === "every"){
+    let n = parseInt(document.getElementById("nVal").value)
+    let arr = sequence.split("")
+    for(let i=0;i<arr.length;i+=n){
+      arr[i] = "_"
+    }
+    lib.push(arr.join(""))
+  }
+
+  if(mode === "slide"){
+    let w = parseInt(document.getElementById("winVal").value)
+    let s = parseInt(document.getElementById("stepVal").value)
+
+    for(let i=0;i<=sequence.length-w;i+=s){
+      let seqArr = sequence.split("")
+      for(let j=0;j<w;j++){
+        seqArr[i+j] = "_"
+      }
+      lib.push(seqArr.join(""))
+    }
+  }
+
+  renderList(lib)
+}
+
+function renderList(lib){
+  const container = document.getElementById("libList")
+  container.innerHTML = ""
+
+  lib.forEach((seq)=>{
+    const row = document.createElement("div")
+    row.className = "flex justify-between items-center bg-white p-2 rounded border"
+
+    row.innerHTML = `
+      <span class="font-mono text-xs truncate">${seq}</span>
+      <button onclick="copyOne('${seq}')"
+        class="text-xs bg-slate-200 px-2 py-1 rounded">
+        Copy
+      </button>
+    `
+    container.appendChild(row)
+  })
+}
+
+function copyAll(){
+  const rows = document.querySelectorAll("#libList span")
+  let all = ""
+  rows.forEach(r=> all += r.innerText + "\\n")
+  navigator.clipboard.writeText(all)
+}
+
+function copyOne(seq){
+  navigator.clipboard.writeText(seq)
+}
+
+</script>
+
+</body>
+</html><div id="card" class="glass bg-white/70 rounded-2xl shadow-xl p-6">
 
 <!-- PURCHASE -->
 <div id="po" class="view fade">
