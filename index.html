@@ -1,400 +1,125 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pa1oLAB Workbench ୧ʕ•̀ᴥ•́ʔ୨ </title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
-    <style>
-        body { font-family: 'Roboto Mono', JetBrains Mono; background-color: #f8fafc; color: #334155; }
-        .font-mono { font-family: 'JetBrains Mono', monospace; }
-
-        /* NAV */
-        .nav-btn { padding: 8px 16px; border-radius: 6px; font-weight: 600; font-size: 14px; cursor: pointer; border: 1px solid transparent; transition: all 0.2s; }
-        .nav-active { background: #4f46e5; color: white; box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3); }
-        .nav-inactive { background: white; color: #4f46e5; border-color: #e2e8f0; }
-        .nav-inactive:hover { background: #f1f5f9; color: #334155; }
-
-        /* ALIGNMENT STYLE */
-        .aln-container { font-family: 'Roboto Mono', monospace; font-size: 13px; line-height: 1.8; white-space: pre; overflow-x: auto; padding-bottom: 10px; }
-        .aln-block { margin-bottom: 20px; background: white; padding: 20px; border-radius: 8px; border: 1px solid #cbd5e1; min-width: max-content; }
-        .aln-row { display: flex; align-items: center; }
-        .aln-name { width: 100px; flex-shrink: 0; text-align: right; padding-right: 15px; font-weight: bold; color: #4f46e5; font-size: 11px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-        
-        /* Centered Residue Box */
-        .res-box { 
-            width: 16px; height: 26px; 
-            display: inline-flex; align-items: center; justify-content: center;
-            cursor: crosshair; transition: all 0.05s;
-        }
-        .res-box:hover {
-            background-color: #f59e0b; color: white !important; font-weight: bold;
-            transform: scale(1.3); border-radius: 2px; z-index: 50; box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-        }
-        .c-mut { background-color: #fee2e2; color: #dc2626; }
-        .c-match { color: #cbd5e1; }
-        .c-gap { color: #94a3b8; }
-        .seq-ref .res-box { font-weight: bold; color: #0f172a; border-bottom: 1px dashed #e2e8f0; }
-
-        /* STATUS BAR */
-        .status-bar {
-            position: sticky; top: 0; z-index: 40;
-            background: #1e293b; color: #fbbf24;
-            padding: 8px 16px; border-radius: 8px;
-            font-family: 'Roboto Mono', monospace;
-            font-size: 12px; font-weight: bold;
-            display: flex; justify-content: space-between; align-items: center;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1); margin-bottom: 15px;
-        }
-
-        /* MASKING STYLE */
-        .mask-grid-box { 
-            width: 34px; height: 40px; 
-            border: 1px solid #e2e8f0; 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            cursor: pointer; background: white; border-radius: 4px; transition: 0.1s; 
-        }
-        .mask-grid-box:hover { border-color: #3b82f6; transform: translateY(-1px); }
-        .mask-grid-box.active { background-color: #ef4444; border-color: #dc2626; color: white; }
-
-        .mask-visual-container { height: 320px; display: flex; flex-direction: column; background: white; border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden; }
-        .mask-list-scroll { flex: 1; overflow-y: auto; padding: 0; }
-        
-        .list-card { padding: 6px 12px; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; font-size: 12px; height: 40px; }
-        .list-card:hover { background-color: #f0f9ff; }
-        
-        .btn-copy-ready {
-            background-color: #e2e8f0; color: #475569;
-            padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 10px;
-            border: 1px solid #cbd5e1; cursor: pointer; transition: 0.1s;
-        }
-        .btn-copy-ready:hover { background-color: #cbd5e1; color: #1e293b; }
-        .btn-copy-ready:active { transform: scale(0.95); }
-
-        /* CODON STYLE */
-        .codon-card { border: 1px solid #e2e8f0; border-radius: 6px; padding: 4px; text-align: center; background: white; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-        .codon-rare { background: #fff1f2; border-color: #fda4af; }
-    </style>
+  <meta charset="UTF-8">
+  <title>Pa1oLAB v2</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="p-4 md:p-8 max-w-7xl mx-auto min-h-screen">
 
-    <header class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <div>
-            <h1 class="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                🧬 Pa1oLAB Workbench ୧ʕ•̀ᴥ•́ʔ୨ 🐻‍❄️ <span class="text-xs bg-indigo-600 text-white px-2 py-1 rounded">V36.0</span>
-            </h1>
-            <p class="text-slate-500 text-sm">©watta17s for NH lab</p>
-        </div>
-        <nav class="flex gap-2">
-            <button onclick="switchTab('align')" id="btn-align" class="nav-btn nav-active">Alignment</button>
-            <button onclick="switchTab('mask')" id="btn-mask" class="nav-btn nav-inactive">Masking</button>
-            <button onclick="switchTab('codon')" id="btn-codon" class="nav-btn nav-inactive">Rare Codon</button>
-        </nav>
-    </header>
+<body class="bg-slate-50 text-slate-800 p-6 max-w-6xl mx-auto">
 
-    <main id="view-align" class="tool-view">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            
-            <div class="status-bar" id="alignStatus">
-                <div class="flex items-center gap-4">
-                    <span>🖱️ Residue...</span>
-                </div>
-                <span class="text-slate-400 font-normal text-[10px] uppercase">Ref Length: <span id="seqLen" class="text-white">0</span></span>
-            </div>
+  <h1 class="text-2xl font-bold mb-4">🧬 Pa1oLAB v2</h1>
 
-            <textarea id="alnInput" class="w-full h-32 p-3 border border-slate-300 rounded font-mono text-xs uppercase mb-4 mt-4 focus:ring-2 focus:ring-blue-500 outline-none" 
-placeholder=">Reference_Seq
-MKTIIALSYIFCLVFADYKSLG...
->Mutant_Example
-MKTIIAL.......FADYK..."></textarea>
-            
-            <button type="button" onclick="runAlign()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded text-sm font-bold shadow transition active:scale-95 w-40">
-                Align!
-            </button>
-            
-            <div id="alnOutput" class="mt-6"></div>
-        </div>
-    </main>
+  <!-- NAV -->
+  <div class="flex gap-2 mb-6">
+    <button onclick="show('po')" class="btn">Purchase</button>
+    <button onclick="show('align')" class="btn">Alignment</button>
+    <button onclick="show('eng')" class="btn">Engineering</button>
+    <button onclick="show('mask')" class="btn">Masking</button>
+  </div>
 
-    <main id="view-mask" class="tool-view hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <h2 class="text-lg font-bold text-slate-800 mb-4">🎭 Masking Generator</h2>
+  <!-- PURCHASE -->
+  <div id="po" class="view">
+    <h2 class="text-lg font-bold">💰 Purchase Order</h2>
+    <p class="text-slate-500">(Future: Google Sheet integration)</p>
+  </div>
 
-            <div class="mb-6">
-                <input id="maskSeq" type="text" class="w-full p-2 border border-slate-300 rounded font-mono uppercase text-sm mb-2 focus:outline-none focus:border-blue-500" placeholder="Paste Protein Sequence..." oninput="renderGrid()">
-                <div id="gridContainer" class="flex flex-wrap gap-1 p-3 bg-slate-50 border rounded max-h-48 overflow-y-auto justify-center">
-                    <span class="text-xs text-slate-400 m-auto">Sequence Grid Preview</span>
-                </div>
-                <div class="flex gap-2 mt-2">
-                    <button onclick="addCurrentSelection()" class="bg-slate-700 hover:bg-slate-800 text-white text-xs px-4 py-2 rounded font-bold">Add Selected</button>
-                    <button onclick="clearGrid()" class="text-red-500 text-xs hover:underline ml-auto self-center">Clear Selection</button>
-                </div>
-            </div>
+  <!-- ALIGNMENT -->
+  <div id="align" class="view hidden">
+    <h2 class="text-lg font-bold mb-2">🧬 Alignment</h2>
+    <textarea id="seq" class="w-full border p-2 font-mono"></textarea>
 
-            <div class="bg-indigo-50 p-4 rounded-lg border border-indigo-100 mb-6 flex flex-wrap gap-4 items-center shadow-sm">
-                <div class="flex items-center gap-2">
-                    <span class="text-sm font-bold text-indigo-900">Sliding Generator:</span>
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Window Size</label>
-                    <input id="winSize" value="3" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
-                </div>
-                <div class="flex items-center gap-2">
-                    <label class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Sliding Step</label>
-                    <input id="stepSize" value="1" class="w-12 text-center text-sm p-1 border border-indigo-200 rounded text-indigo-900 font-bold focus:ring-1 focus:ring-indigo-500 outline-none">
-                </div>
-                <button onclick="runAutoScan()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs px-4 py-2 rounded font-bold ml-auto shadow-sm transition">Generate Lib</button>
-            </div>
+    <div id="output" class="mt-4 font-mono text-sm"></div>
+  </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="flex flex-col h-[320px]">
-                    <div class="flex justify-between mb-1">
-                        <label class="text-xs font-bold text-slate-500">Plain Text Output</label>
-                        <button onclick="copyRaw()" id="btnCopyRaw" class="text-xs text-green-600 font-bold hover:underline">Copy All</button>
-                    </div>
-                    <textarea id="maskRaw" class="flex-1 p-3 border border-slate-200 rounded font-mono text-xs resize-none bg-slate-50 focus:outline-none" readonly></textarea>
-                </div>
+  <!-- ENGINEERING -->
+  <div id="eng" class="view hidden">
+    <h2 class="text-lg font-bold">🧬 Engineering</h2>
+    <p class="text-slate-500">Mutation + Codon (coming soon)</p>
+  </div>
 
-                <div class="flex flex-col h-[320px]">
-                    <div class="flex justify-between mb-1">
-                        <label class="text-xs font-bold text-slate-500">Library List (<span id="libCount">0</span>)</label>
-                        <button onclick="clearList()" class="text-xs text-red-400 font-bold hover:text-red-600">Clear All</button>
-                    </div>
-                    <div class="mask-visual-container">
-                        <div id="maskListScroll" class="mask-list-scroll">
-                            <div class="text-center text-slate-300 text-xs mt-10">Empty</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </main>
+  <!-- MASKING -->
+  <div id="mask" class="view hidden">
+    <h2 class="text-lg font-bold mb-2">🎭 Masking</h2>
 
-    <main id="view-codon" class="tool-view hidden">
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-800">🦠 Rare Codon Map</h2>
-                <span class="bg-yellow-300 text-yellow-900 px-3 py-1 rounded-full text-xs font-bold border border-yellow-400">Ref: E. coli K12</span>
-            </div>
-            <textarea id="codonInput" class="w-full p-3 border border-slate-200 rounded font-mono text-sm uppercase h-24 mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-400" placeholder="PASTE DNA SEQUENCE HERE..." oninput="analyzeCodons()"></textarea>
-            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
-                <div id="codonGrid" class="grid grid-cols-8 md:grid-cols-12 gap-2"></div>
-            </div>
-        </div>
-    </main>
+    <input id="maskInput" class="w-full border p-2 font-mono mb-3" placeholder="Paste protein sequence">
 
-    <script>
-        let libraryList = [];
-        
-        window.switchTab = function(id) {
-            document.querySelectorAll('.tool-view').forEach(e => e.classList.add('hidden'));
-            document.getElementById('view-'+id).classList.remove('hidden');
-            ['align','mask','codon'].forEach(k => {
-                document.getElementById('btn-'+k).className = (k===id) ? 'nav-btn nav-active' : 'nav-btn nav-inactive';
-            });
-        }
+    <div id="grid" class="flex flex-wrap gap-1"></div>
 
-        // --- 1. ALIGNMENT (FIXED: ATOMIC UPDATE) ---
-        window.runAlign = function() {
-            // 1. Get Input
-            const raw = document.getElementById('alnInput').value;
-            
-            // 2. Validate Input (Alert user if empty instead of just clearing output)
-            if(!raw || !raw.trim()) {
-                alert("⚠️ Please enter sequence data first.");
-                return; // Stop here. Do NOT clear the existing output.
-            }
+    <div class="mt-4 bg-slate-100 p-3 rounded">
+      <p id="maskPos"></p>
+      <p id="maskSeq" class="font-mono"></p>
+    </div>
 
-            // 3. Prepare Variables (Local Scope)
-            const lines = raw.split('\n');
-            let seqs = []; 
-            let curr = {n:'', s:''};
-            
-            // 4. Parse
-            lines.forEach(l => {
-                l = l.trim();
-                if(l.startsWith('>')) { 
-                    if(curr.n || curr.s) seqs.push(curr); 
-                    curr={n:l.substring(1),s:''}; 
-                } else {
-                    if(!curr.n) curr.n = "Input_Seq"; 
-                    curr.s += l.replace(/[^A-Za-z\-\.]/g,'').toUpperCase();
-                }
-            });
-            if(curr.n || curr.s) seqs.push(curr);
-            
-            if(seqs.length === 0) {
-                alert("No valid sequences found.");
-                return;
-            }
+    <button onclick="copySeq()" class="mt-2 bg-indigo-600 text-white px-4 py-2 rounded">
+      Copy
+    </button>
+  </div>
 
-            // 5. Generate HTML (In Memory ONLY)
-            const ref = seqs[0];
-            const width = 100; 
-            let newHTML = `<div class="aln-container">`;
+<script>
+function show(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.add('hidden'))
+  document.getElementById(id).classList.remove('hidden')
+}
 
-            for(let i=0; i < ref.s.length; i += width) {
-                newHTML += `<div class="aln-block">`;
-                
-                // Ref Row
-                let chunkRef = ref.s.substr(i, width);
-                let refHtml = "";
-                for(let k=0; k<chunkRef.length; k++) {
-                    let pos = i + k + 1;
-                    let aa = chunkRef[k];
-                    refHtml += `<span class="res-box" onmouseenter="showStat(${pos}, '${aa}', 'Ref')">${aa}</span>`;
-                }
+/* ALIGNMENT */
+document.getElementById("seq").addEventListener("input", e=>{
+  const s = e.target.value
+  let html = ""
+  for(let i=0;i<s.length;i++){
+    html += `<span title="Position ${i+1}" class="inline-block w-4 text-center hover:bg-yellow-300">${s[i]}</span>`
+  }
+  document.getElementById("output").innerHTML = html
+})
 
-                newHTML += `<div class="aln-row">
-                            <div class="aln-name" title="${ref.n}">Ref</div>
-                            <div class="aln-seq seq-ref">${refHtml}</div>
-                         </div>`;
+/* MASKING */
+let masked = []
 
-                // Mutant Rows
-                for(let m=1; m<seqs.length; m++) {
-                    let sObj = seqs[m];
-                    let chunkMut = sObj.s.substr(i, width);
-                    let vis = "";
-                    for(let k=0; k<chunkMut.length; k++) {
-                        let pos = i + k + 1;
-                        let mc = chunkMut[k] || '';
-                        let rc = chunkRef[k] || ''; 
-                        let cssClass = "", text = "";
+document.getElementById("maskInput").addEventListener("input", e=>{
+  const seq = e.target.value.toUpperCase()
+  const grid = document.getElementById("grid")
+  grid.innerHTML = ""
 
-                        if(mc===rc && mc!=='-') { cssClass="c-match"; text="."; }
-                        else if(mc==='-') { cssClass="c-gap"; text="-"; }
-                        else { cssClass="c-mut"; text=mc; }
+  seq.split("").forEach((aa,i)=>{
+    const box = document.createElement("div")
+    box.className = "w-8 h-10 border flex flex-col items-center text-xs cursor-pointer"
+    box.innerHTML = `<b>${aa}</b><span>${i+1}</span>`
 
-                        vis += `<span class="res-box ${cssClass}" onmouseenter="showStat(${pos}, '${mc}', '${sObj.n}')">${text}</span>`;
-                    }
-                    newHTML += `<div class="aln-row">
-                                <div class="aln-name" title="${sObj.n}">${sObj.n.substring(0,10)}</div>
-                                <div class="aln-seq">${vis}</div>
-                             </div>`;
-                }
-                newHTML += `</div>`;
-            }
-            newHTML += `</div>`;
+    box.onclick = ()=>{
+      if(masked.includes(i)) masked = masked.filter(x=>x!==i)
+      else masked.push(i)
+      update(seq)
+    }
 
-            // 6. SWAP (Atomic Update)
-            // Only now do we touch the DOM. This prevents flickering or empty states.
-            document.getElementById('seqLen').innerText = ref.s.length;
-            document.getElementById('alnOutput').innerHTML = newHTML;
-        }
+    grid.appendChild(box)
+  })
+})
 
-        window.showStat = function(pos, aa, name) {
-            const bar = document.getElementById('alignStatus');
-            let displayAA = aa === '.' ? 'Match' : aa;
-            bar.innerHTML = `
-                <div class="flex items-center gap-4">
-                    <span class="bg-indigo-600 text-white px-2 py-1 rounded text-xs">POS: ${pos}</span>
-                    <span class="text-white">RESIDUE: <span class="text-yellow-400 text-lg font-bold">${displayAA}</span></span>
-                    <span class="text-slate-400 text-xs border-l border-slate-600 pl-4">Seq: ${name}</span>
-                </div>
-            `;
-        }
+function update(seq){
+  let out = ""
+  for(let i=0;i<seq.length;i++){
+    out += masked.includes(i) ? "_" : seq[i]
+  }
+  document.getElementById("maskSeq").innerText = out
+  document.getElementById("maskPos").innerText = "Masked: " + masked.map(i=>i+1).join(", ")
+}
 
-        // --- 2. MASKING ---
-        window.renderGrid = function() {
-            const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
-            const container = document.getElementById('gridContainer');
-            if(!seq) { container.innerHTML = `<span class="text-xs text-slate-400 m-auto">Enter sequence to see grid</span>`; return; }
-            let h = "";
-            for(let i=0; i<seq.length; i++) {
-                h += `<div class="mask-grid-box" id="mb-${i}" onclick="toggleBox(${i})">
-                    <span class="text-xs font-bold text-slate-600">${seq[i]}</span>
-                    <span class="text-[8px] text-slate-300">${i+1}</span>
-                </div>`;
-            }
-            container.innerHTML = h;
-        }
-        window.toggleBox = function(i) { document.getElementById(`mb-${i}`).classList.toggle('active'); }
-        window.clearGrid = function() { document.querySelectorAll('.mask-grid-box').forEach(b => b.classList.remove('active')); }
+function copySeq(){
+  navigator.clipboard.writeText(document.getElementById("maskSeq").innerText)
+}
+</script>
 
-        window.addCurrentSelection = function() {
-            const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
-            if(!seq) return;
-            let m = "", has=false;
-            for(let i=0; i<seq.length; i++) {
-                const b = document.getElementById(`mb-${i}`);
-                if(b && b.classList.contains('active')) { m+="_"; has=true; } else m+=seq[i];
-            }
-            if(has) { if(!libraryList.includes(m)) libraryList.push(m); updateList(); }
-        }
+<style>
+.btn {
+  background:white;
+  border:1px solid #ddd;
+  padding:6px 12px;
+  border-radius:6px;
+}
+.btn:hover{
+  background:#eee;
+}
+</style>
 
-        window.runAutoScan = function() {
-            const seq = document.getElementById('maskSeq').value.trim().toUpperCase();
-            if(!seq) return;
-            const w = parseInt(document.getElementById('winSize').value)||3;
-            const s = parseInt(document.getElementById('stepSize').value)||1;
-            for(let i=0; i<=seq.length-w; i+=s) {
-                let v = seq.substring(0,i) + "_".repeat(w) + seq.substring(i+w);
-                if(!libraryList.includes(v)) libraryList.push(v);
-            }
-            updateList();
-        }
-
-        window.updateList = function() {
-            document.getElementById('maskRaw').value = libraryList.join('\n');
-            document.getElementById('libCount').innerText = libraryList.length;
-            const con = document.getElementById('maskListScroll');
-            if(libraryList.length===0) { con.innerHTML=`<div class="text-center text-slate-300 text-xs mt-10">Empty</div>`; return; }
-            let h = "";
-            libraryList.forEach((seq, idx) => {
-                h += `<div class="list-card">
-                    <div class="flex items-center gap-2 overflow-hidden">
-                        <span class="text-slate-400 w-5 text-right font-mono">${idx+1}.</span>
-                        <span class="text-slate-700 font-mono font-bold tracking-wider truncate">${seq}</span>
-                    </div>
-                    <button onclick="copyByIndex(${idx}, this)" class="btn-copy-ready">Copy</button>
-                </div>`;
-            });
-            con.innerHTML = h;
-        }
-
-        window.copyByIndex = function(idx, btn) {
-            const txt = libraryList[idx];
-            navigator.clipboard.writeText(txt);
-            btn.innerText = "Copied!";
-            btn.style.backgroundColor = "#22c55e"; 
-            btn.style.color = "white";
-            setTimeout(()=>{ 
-                btn.innerText = "Copy"; 
-                btn.style.backgroundColor = ""; 
-                btn.style.color = ""; 
-            }, 1000);
-        }
-
-        window.clearList = function() { libraryList=[]; updateList(); }
-        window.copyRaw = function() {
-            document.getElementById('maskRaw').select();
-            document.execCommand('copy');
-            let b = document.getElementById('btnCopyRaw');
-            b.innerText="Copied!"; setTimeout(()=>b.innerText="Copy All",1000);
-        }
-
-        // --- 3. CODON ---
-        window.analyzeCodons = function() {
-            const dna = document.getElementById('codonInput').value.toUpperCase().replace(/[^ATGC]/g,'');
-            const map = {'TTT':'F','TTC':'F','TTA':'L','TTG':'L','CTT':'L','CTC':'L','CTA':'L','CTG':'L','ATT':'I','ATC':'I','ATA':'I','ATG':'M','GTT':'V','GTC':'V','GTA':'V','GTG':'V','TCT':'S','TCC':'S','TCA':'S','TCG':'S','CCT':'P','CCC':'P','CCA':'P','CCG':'P','ACT':'T','ACC':'T','ACA':'T','ACG':'T','GCT':'A','GCC':'A','GCA':'A','GCG':'A','TAT':'Y','TAC':'Y','TAA':'*','TAG':'*','CAT':'H','CAC':'H','CAA':'Q','CAG':'Q','AAT':'N','AAC':'N','AAA':'K','AAG':'K','GAT':'D','GAC':'D','GAA':'E','GAG':'E','TGT':'C','TGC':'C','TGA':'*','TGG':'W','CGT':'R','CGC':'R','CGA':'R','CGG':'R','AGT':'S','AGC':'S','AGA':'R','AGG':'R','GGT':'G','GGC':'G','GGA':'G','GGG':'G'};
-            const usage = {'TTT':22.3,'TTC':16.5,'TTA':13.7,'TTG':13.6,'CTT':11.0,'CTC':11.1,'CTA':3.9,'CTG':52.9,'ATT':30.4,'ATC':25.0,'ATA':4.5,'ATG':27.7,'GTT':18.3,'GTC':15.2,'GTA':10.9,'GTG':26.3,'TCT':8.5,'TCC':8.6,'TCA':7.1,'TCG':8.9,'CCT':7.0,'CCC':5.5,'CCA':8.4,'CCG':23.2,'ACT':8.9,'ACC':23.4,'ACA':7.1,'ACG':14.4,'GCT':15.3,'GCC':25.5,'GCA':20.3,'GCG':33.7,'TAT':16.2,'TAC':12.2,'TAA':2.0,'TAG':0.2,'CAT':12.8,'CAC':9.7,'CAA':15.1,'CAG':29.0,'AAT':17.6,'AAC':21.6,'AAA':33.2,'AAG':13.3,'GAT':32.2,'GAC':19.1,'GAA':39.7,'GAG':17.8,'TGT':5.2,'TGC':6.4,'TGA':0.9,'TGG':15.3,'CGT':20.9,'CGC':22.0,'CGA':3.6,'CGG':5.4,'AGT':8.7,'AGC':16.0,'AGA':2.1,'AGG':1.2,'GGT':24.7,'GGC':29.6,'GGA':7.9,'GGG':11.0};
-            
-            let maxF={}; for(let c in map) { let a=map[c]; if(!maxF[a] || usage[c]>maxF[a]) maxF[a]=usage[c]; }
-            let h = "";
-            for(let i=0; i<dna.length; i+=3) {
-                let c = dna.substr(i,3); if(c.length<3) break;
-                let aa = map[c]||'?';
-                let isRare = ((usage[c]||0)/(maxF[aa]||1)) < 0.10;
-                if(aa==='M'||aa==='W') isRare=false;
-                h += `<div class="codon-card ${isRare?'codon-rare':''}">
-                    <div class="text-[10px] font-bold text-slate-500">${aa}</div>
-                    <div class="text-xs font-mono text-slate-800">${c}</div>
-                    <div class="text-[8px] text-slate-300 mt-1">${i+1}</div>
-                </div>`;
-            }
-            document.getElementById('codonGrid').innerHTML = h;
-        }
-    </script>
 </body>
 </html>
