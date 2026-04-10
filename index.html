@@ -32,6 +32,13 @@ body {
 .nav-btn:hover {
   transform: translateY(-1px);
 }
+
+/* COPY ANIMATION */
+.copy-success {
+  background: #22c55e !important;
+  color: white !important;
+  transform: scale(0.95);
+}
 </style>
 </head>
 
@@ -79,7 +86,7 @@ body {
 <!-- ENGINEERING -->
 <div id="eng" class="view hidden">
   <h2 class="text-lg font-semibold">🧬 Engineering</h2>
-  <p class="text-sm opacity-60 mt-2">Mutation + Codon (coming soon)</p>
+  <p class="text-sm opacity-60 mt-2">Coming soon</p>
 </div>
 
 <!-- MASKING -->
@@ -93,18 +100,12 @@ body {
 
   <!-- MODE -->
   <div class="flex justify-center gap-3 mb-6">
-    <button onclick="setMode('every')" class="nav-btn">Every N</button>
     <button onclick="setMode('slide')" class="nav-btn">Sliding</button>
+    <button onclick="setMode('manual')" class="nav-btn">Manual</button>
   </div>
 
   <!-- CONTROL -->
   <div class="flex justify-center items-center gap-4 mb-6 text-sm">
-
-    <div class="flex items-center gap-1">
-      <span class="text-slate-500 text-xs">N</span>
-      <input id="nVal" type="number" value="3"
-        class="w-16 p-1 border rounded text-center">
-    </div>
 
     <div class="flex items-center gap-1">
       <span class="text-slate-500 text-xs">Window</span>
@@ -133,7 +134,7 @@ body {
 
     <div class="flex justify-between items-center mb-2">
       <span class="text-xs text-slate-500">Library Output</span>
-      <button onclick="copyAll()"
+      <button id="copyAllBtn" onclick="copyAll(this)"
         class="text-xs bg-indigo-600 text-white px-3 py-1 rounded">
         Copy All
       </button>
@@ -183,7 +184,7 @@ window.onload = () => {
   }
 }
 
-/* ALIGNMENT */
+/* ALIGN */
 document.getElementById("seq").addEventListener("input", e=>{
   const s = e.target.value
   let html = ""
@@ -194,8 +195,9 @@ document.getElementById("seq").addEventListener("input", e=>{
 })
 
 /* MASK ENGINE */
-let mode = "every"
+let mode = "manual"
 let sequence = ""
+let manualMask = []
 
 function setMode(m){ mode = m }
 
@@ -207,11 +209,26 @@ document.getElementById("maskInput").addEventListener("input", e=>{
 function renderGrid(){
   const grid = document.getElementById("grid")
   grid.innerHTML = ""
+  manualMask = []
 
   sequence.split("").forEach((aa,i)=>{
     const box = document.createElement("div")
-    box.className = "w-12 h-14 rounded-xl border flex flex-col items-center justify-center text-sm"
+    box.className = "w-12 h-14 rounded-xl border flex flex-col items-center justify-center text-sm cursor-pointer"
+
     box.innerHTML = `<b>${aa}</b><span class="text-[10px]">${i+1}</span>`
+
+    box.onclick = ()=>{
+      if(mode !== "manual") return
+
+      if(manualMask.includes(i)){
+        manualMask = manualMask.filter(x=>x!==i)
+        box.classList.remove("bg-red-400","text-white")
+      } else {
+        manualMask.push(i)
+        box.classList.add("bg-red-400","text-white")
+      }
+    }
+
     grid.appendChild(box)
   })
 }
@@ -219,12 +236,9 @@ function renderGrid(){
 function generateLib(){
   let lib = []
 
-  if(mode === "every"){
-    let n = parseInt(document.getElementById("nVal").value)
+  if(mode === "manual"){
     let arr = sequence.split("")
-    for(let i=0;i<arr.length;i+=n){
-      arr[i] = "_"
-    }
+    manualMask.forEach(i => arr[i] = "_")
     lib.push(arr.join(""))
   }
 
@@ -233,11 +247,11 @@ function generateLib(){
     let s = parseInt(document.getElementById("stepVal").value)
 
     for(let i=0;i<=sequence.length-w;i+=s){
-      let seqArr = sequence.split("")
+      let arr = sequence.split("")
       for(let j=0;j<w;j++){
-        seqArr[i+j] = "_"
+        arr[i+j] = "_"
       }
-      lib.push(seqArr.join(""))
+      lib.push(arr.join(""))
     }
   }
 
@@ -254,7 +268,7 @@ function renderList(lib){
 
     row.innerHTML = `
       <span class="font-mono text-xs truncate">${seq}</span>
-      <button onclick="copyOne('${seq}')"
+      <button onclick="copyOne(this,'${seq}')"
         class="text-xs bg-slate-200 px-2 py-1 rounded">
         Copy
       </button>
@@ -263,206 +277,29 @@ function renderList(lib){
   })
 }
 
-function copyAll(){
+/* COPY */
+function copyAll(btn){
   const rows = document.querySelectorAll("#libList span")
   let all = ""
   rows.forEach(r=> all += r.innerText + "\\n")
+
   navigator.clipboard.writeText(all)
+  animateCopy(btn)
 }
 
-function copyOne(seq){
+function copyOne(btn,seq){
   navigator.clipboard.writeText(seq)
+  animateCopy(btn)
 }
 
-</script>
+function animateCopy(btn){
+  btn.classList.add("copy-success")
+  btn.innerText = "Copied ✓"
 
-</body>
-</html><div id="card" class="glass bg-white/70 rounded-2xl shadow-xl p-6">
-
-<!-- PURCHASE -->
-<div id="po" class="view fade">
-  <h2 class="text-lg font-semibold mb-2">💰 Purchase Order</h2>
-  <p class="text-sm opacity-60">Google Sheet integration coming soon</p>
-</div>
-
-<!-- ALIGNMENT -->
-<div id="align" class="view hidden">
-  <h2 class="text-lg font-semibold mb-4">🧬 Alignment</h2>
-
-  <textarea id="seq"
-    class="w-full p-3 border rounded-xl font-mono text-sm"
-    placeholder="Paste sequence..."></textarea>
-
-  <div id="output" class="mt-4 font-mono text-sm"></div>
-</div>
-
-<!-- ENGINEERING -->
-<div id="eng" class="view hidden">
-  <h2 class="text-lg font-semibold">🧬 Engineering</h2>
-  <p class="text-sm opacity-60 mt-2">Mutation + Codon (coming soon)</p>
-</div>
-
-<!-- MASKING -->
-<div id="mask" class="view hidden">
-  <h2 class="text-lg font-semibold mb-4">🎭 Masking Engine</h2>
-
-  <input id="maskInput"
-    class="w-full p-3 border rounded-xl font-mono text-sm mb-4"
-    placeholder="Paste protein sequence...">
-
-  <!-- MODE -->
-  <div class="flex gap-2 mb-4">
-    <button onclick="setMode('manual')" class="nav-btn">Manual</button>
-    <button onclick="setMode('every')" class="nav-btn">Every N</button>
-    <button onclick="setMode('slide')" class="nav-btn">Sliding</button>
-  </div>
-
-  <!-- CONTROL -->
-  <div class="flex gap-3 mb-4 text-sm">
-    <input id="nVal" type="number" value="3" class="w-20 p-1 border rounded">
-    <input id="winVal" type="number" value="5" class="w-20 p-1 border rounded">
-    <input id="stepVal" type="number" value="1" class="w-20 p-1 border rounded">
-    <button onclick="generateLib()" class="bg-indigo-600 text-white px-3 py-1 rounded">Generate</button>
-  </div>
-
-  <!-- GRID -->
-  <div id="grid" class="flex flex-wrap gap-1"></div>
-
-  <!-- OUTPUT -->
-  <div class="mt-6 p-4 rounded-xl bg-slate-100">
-    <p id="maskPos" class="text-xs opacity-60 mb-1"></p>
-    <p id="maskSeq" class="font-mono text-sm mb-3"></p>
-
-    <textarea id="libOut" class="w-full h-32 p-2 border rounded font-mono text-xs"></textarea>
-  </div>
-
-  <button onclick="copyLib()"
-    class="mt-3 bg-indigo-600 text-white px-4 py-2 rounded-xl">
-    Copy Library
-  </button>
-</div>
-
-</div>
-</div>
-
-<script>
-
-/* NAV */
-function show(id){
-  document.querySelectorAll('.view').forEach(v=>{
-    v.classList.add('hidden')
-    v.classList.remove('fade')
-  })
-  const el = document.getElementById(id)
-  el.classList.remove('hidden')
-  el.classList.add('fade')
-}
-
-/* DARK MODE */
-function toggleDark(){
-  const body = document.getElementById("body")
-  const card = document.getElementById("card")
-
-  if(body.classList.contains("bg-slate-900")){
-    body.className = "bg-slate-100 text-slate-800 min-h-screen"
-    card.className = "glass bg-white/70 rounded-2xl shadow-xl p-6"
-    localStorage.setItem("theme","light")
-  } else {
-    body.className = "bg-slate-900 text-slate-100 min-h-screen"
-    card.className = "glass bg-slate-800/70 rounded-2xl shadow-xl p-6"
-    localStorage.setItem("theme","dark")
-  }
-}
-
-window.onload = () => {
-  if(localStorage.getItem("theme")==="dark"){
-    toggleDark()
-  }
-}
-
-/* ALIGNMENT */
-document.getElementById("seq").addEventListener("input", e=>{
-  const s = e.target.value
-  let html = ""
-  for(let i=0;i<s.length;i++){
-    html += `<span title="Position ${i+1}" class="inline-block w-5 text-center hover:bg-indigo-500 hover:text-white rounded">${s[i]}</span>`
-  }
-  document.getElementById("output").innerHTML = html
-})
-
-/* MASKING ENGINE */
-let masked = []
-let mode = "manual"
-let sequence = ""
-
-function setMode(m){ mode = m }
-
-document.getElementById("maskInput").addEventListener("input", e=>{
-  sequence = e.target.value.toUpperCase()
-  renderGrid()
-})
-
-function renderGrid(){
-  const grid = document.getElementById("grid")
-  grid.innerHTML = ""
-  masked = []
-
-  sequence.split("").forEach((aa,i)=>{
-    const box = document.createElement("div")
-    box.className = "w-10 h-12 border rounded flex flex-col items-center text-xs cursor-pointer hover:bg-indigo-500 hover:text-white"
-    box.innerHTML = `<b>${aa}</b><span>${i+1}</span>`
-
-    box.onclick = ()=>{
-      if(mode !== "manual") return
-      if(masked.includes(i)) masked = masked.filter(x=>x!==i)
-      else masked.push(i)
-      updateSingle()
-    }
-
-    grid.appendChild(box)
-  })
-}
-
-function updateSingle(){
-  let out = ""
-  for(let i=0;i<sequence.length;i++){
-    out += masked.includes(i) ? "_" : sequence[i]
-  }
-  document.getElementById("maskSeq").innerText = out
-  document.getElementById("maskPos").innerText =
-    "Masked: " + masked.map(i=>i+1).join(", ")
-}
-
-function generateLib(){
-  let lib = []
-
-  if(mode === "every"){
-    let n = parseInt(document.getElementById("nVal").value)
-    let arr = sequence.split("")
-    for(let i=0;i<arr.length;i+=n){
-      arr[i] = "_"
-    }
-    lib.push(arr.join(""))
-  }
-
-  if(mode === "slide"){
-    let w = parseInt(document.getElementById("winVal").value)
-    let s = parseInt(document.getElementById("stepVal").value)
-
-    for(let i=0;i<=sequence.length-w;i+=s){
-      let seqArr = sequence.split("")
-      for(let j=0;j<w;j++){
-        seqArr[i+j] = "_"
-      }
-      lib.push(seqArr.join(""))
-    }
-  }
-
-  document.getElementById("libOut").value = lib.join("\n")
-}
-
-function copyLib(){
-  navigator.clipboard.writeText(document.getElementById("libOut").value)
+  setTimeout(()=>{
+    btn.classList.remove("copy-success")
+    btn.innerText = "Copy"
+  },1000)
 }
 
 </script>
