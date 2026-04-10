@@ -1,60 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Pa1oLAB v2</title>
-  <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<title>Pa1oLAB v2</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+body {
+  font-family: 'Inter', sans-serif;
+}
+.glass {
+  background: rgba(255,255,255,0.7);
+  backdrop-filter: blur(10px);
+}
+</style>
 </head>
 
-<body class="bg-slate-50 text-slate-800 p-6 max-w-6xl mx-auto">
+<body class="bg-gradient-to-br from-slate-100 to-slate-200 min-h-screen">
 
-  <h1 class="text-2xl font-bold mb-4">🧬 Pa1oLAB v2</h1>
+<div class="max-w-6xl mx-auto p-8">
+
+  <!-- HEADER -->
+  <div class="mb-8">
+    <h1 class="text-3xl font-semibold text-slate-800">🧬 Pa1oLAB</h1>
+    <p class="text-slate-500 text-sm">Bioengineering Workbench</p>
+  </div>
 
   <!-- NAV -->
   <div class="flex gap-2 mb-6">
-    <button onclick="show('po')" class="btn">Purchase</button>
-    <button onclick="show('align')" class="btn">Alignment</button>
-    <button onclick="show('eng')" class="btn">Engineering</button>
-    <button onclick="show('mask')" class="btn">Masking</button>
+    <button onclick="show('po')" class="nav-btn">Purchase</button>
+    <button onclick="show('align')" class="nav-btn">Alignment</button>
+    <button onclick="show('eng')" class="nav-btn">Engineering</button>
+    <button onclick="show('mask')" class="nav-btn">Masking</button>
   </div>
 
-  <!-- PURCHASE -->
-  <div id="po" class="view">
-    <h2 class="text-lg font-bold">💰 Purchase Order</h2>
-    <p class="text-slate-500">(Future: Google Sheet integration)</p>
-  </div>
+  <!-- CARD -->
+  <div class="glass rounded-2xl shadow-xl p-6">
 
-  <!-- ALIGNMENT -->
-  <div id="align" class="view hidden">
-    <h2 class="text-lg font-bold mb-2">🧬 Alignment</h2>
-    <textarea id="seq" class="w-full border p-2 font-mono"></textarea>
-
-    <div id="output" class="mt-4 font-mono text-sm"></div>
-  </div>
-
-  <!-- ENGINEERING -->
-  <div id="eng" class="view hidden">
-    <h2 class="text-lg font-bold">🧬 Engineering</h2>
-    <p class="text-slate-500">Mutation + Codon (coming soon)</p>
-  </div>
-
-  <!-- MASKING -->
-  <div id="mask" class="view hidden">
-    <h2 class="text-lg font-bold mb-2">🎭 Masking</h2>
-
-    <input id="maskInput" class="w-full border p-2 font-mono mb-3" placeholder="Paste protein sequence">
-
-    <div id="grid" class="flex flex-wrap gap-1"></div>
-
-    <div class="mt-4 bg-slate-100 p-3 rounded">
-      <p id="maskPos"></p>
-      <p id="maskSeq" class="font-mono"></p>
+    <!-- PURCHASE -->
+    <div id="po" class="view">
+      <h2 class="text-lg font-semibold mb-2">💰 Purchase Order</h2>
+      <p class="text-slate-500 text-sm">Google Sheet integration coming soon</p>
     </div>
 
-    <button onclick="copySeq()" class="mt-2 bg-indigo-600 text-white px-4 py-2 rounded">
-      Copy
-    </button>
+    <!-- ALIGN -->
+    <div id="align" class="view hidden">
+      <h2 class="text-lg font-semibold mb-4">🧬 Alignment</h2>
+
+      <textarea id="seq" placeholder="Paste sequence..."
+        class="w-full p-3 border rounded-xl font-mono text-sm focus:ring-2 focus:ring-indigo-400 outline-none"></textarea>
+
+      <div id="output" class="mt-4 font-mono text-sm leading-6"></div>
+    </div>
+
+    <!-- ENGINEERING -->
+    <div id="eng" class="view hidden">
+      <h2 class="text-lg font-semibold">🧬 Engineering</h2>
+      <p class="text-slate-500 text-sm mt-2">Mutation + Codon system coming soon</p>
+    </div>
+
+    <!-- MASK -->
+    <div id="mask" class="view hidden">
+      <h2 class="text-lg font-semibold mb-4">🎭 Masking</h2>
+
+      <input id="maskInput"
+        class="w-full p-3 border rounded-xl font-mono text-sm mb-4 focus:ring-2 focus:ring-indigo-400 outline-none"
+        placeholder="Paste protein sequence...">
+
+      <div id="grid" class="flex flex-wrap gap-1"></div>
+
+      <div class="mt-6 p-4 bg-slate-100 rounded-xl">
+        <p id="maskPos" class="text-xs text-slate-500 mb-1"></p>
+        <p id="maskSeq" class="font-mono text-sm"></p>
+      </div>
+
+      <button onclick="copySeq()"
+        class="mt-4 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-sm transition">
+        Copy Sequence
+      </button>
+    </div>
+
   </div>
+</div>
 
 <script>
 function show(id){
@@ -62,12 +91,17 @@ function show(id){
   document.getElementById(id).classList.remove('hidden')
 }
 
-/* ALIGNMENT */
+/* NAV STYLE */
+document.querySelectorAll(".nav-btn").forEach(btn=>{
+  btn.className = "px-4 py-2 text-sm rounded-xl bg-white shadow hover:shadow-md transition"
+})
+
+/* ALIGN */
 document.getElementById("seq").addEventListener("input", e=>{
   const s = e.target.value
   let html = ""
   for(let i=0;i<s.length;i++){
-    html += `<span title="Position ${i+1}" class="inline-block w-4 text-center hover:bg-yellow-300">${s[i]}</span>`
+    html += `<span title="Position ${i+1}" class="inline-block w-5 text-center hover:bg-indigo-500 hover:text-white rounded">${s[i]}</span>`
   }
   document.getElementById("output").innerHTML = html
 })
@@ -82,8 +116,8 @@ document.getElementById("maskInput").addEventListener("input", e=>{
 
   seq.split("").forEach((aa,i)=>{
     const box = document.createElement("div")
-    box.className = "w-8 h-10 border flex flex-col items-center text-xs cursor-pointer"
-    box.innerHTML = `<b>${aa}</b><span>${i+1}</span>`
+    box.className = "w-10 h-12 rounded-lg border flex flex-col items-center justify-center text-xs cursor-pointer hover:bg-indigo-500 hover:text-white transition"
+    box.innerHTML = `<b>${aa}</b><span class="text-[9px]">${i+1}</span>`
 
     box.onclick = ()=>{
       if(masked.includes(i)) masked = masked.filter(x=>x!==i)
@@ -101,25 +135,14 @@ function update(seq){
     out += masked.includes(i) ? "_" : seq[i]
   }
   document.getElementById("maskSeq").innerText = out
-  document.getElementById("maskPos").innerText = "Masked: " + masked.map(i=>i+1).join(", ")
+  document.getElementById("maskPos").innerText =
+    "Masked positions: " + masked.map(i=>i+1).join(", ")
 }
 
 function copySeq(){
   navigator.clipboard.writeText(document.getElementById("maskSeq").innerText)
 }
 </script>
-
-<style>
-.btn {
-  background:white;
-  border:1px solid #ddd;
-  padding:6px 12px;
-  border-radius:6px;
-}
-.btn:hover{
-  background:#eee;
-}
-</style>
 
 </body>
 </html>
