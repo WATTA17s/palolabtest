@@ -81,6 +81,245 @@ body { font-family: sans-serif; }
   class="w-full max-w-xl mx-auto block p-2 border rounded font-mono text-center mb-4"
   placeholder="Paste sequence">
 
+<p class="text-center text-xs text-slate-500 mb-3">
+  Click residues to mask manually
+</p>
+
+<!-- ✅ NEW: TOGGLE -->
+<label class="flex justify-center items-center gap-2 mb-4 text-sm">
+  <input type="checkbox" id="useSliding" checked>
+  Include Sliding
+</label>
+
+<!-- CONTROLS -->
+<div class="flex gap-2 justify-center mb-4">
+  <input id="win" type="number" value="5" class="w-16 border text-center">
+  <input id="step" type="number" value="1" class="w-16 border text-center">
+
+  <button id="genBtn" class="bg-indigo-600 text-white px-3 rounded flex items-center gap-2">
+    Generate
+  </button>
+</div>
+
+<!-- GRID -->
+<div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+
+<!-- OUTPUT -->
+<div class="bg-slate-100 p-3 rounded">
+  <div class="flex justify-between mb-2">
+    <span class="text-xs">Library</span>
+    <button id="copyAll" class="text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
+  </div>
+  <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+/* NAV */
+const navBtns = document.querySelectorAll("[data-page]")
+navBtns.forEach(btn=>{
+  btn.onclick = ()=>{
+    navBtns.forEach(b=>b.classList.remove("active"))
+    btn.classList.add("active")
+
+    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
+    document.getElementById(btn.dataset.page).classList.remove("hidden")
+  }
+})
+
+/* ALIGN */
+document.getElementById("seq").oninput = e=>{
+  const s = e.target.value
+  let html=""
+  for(let i=0;i<s.length;i++){
+    html+=`<span title="pos ${i+1}" class="inline-block w-4 text-center hover:bg-indigo-500 hover:text-white">${s[i]}</span>`
+  }
+  document.getElementById("output").innerHTML = html
+}
+
+/* MASK ENGINE */
+let sequence = ""
+let manualMask = new Set()
+let library = []
+
+const grid = document.getElementById("grid")
+const list = document.getElementById("list")
+
+document.getElementById("seqInput").oninput = e=>{
+  sequence = e.target.value.toUpperCase()
+  manualMask.clear()
+  renderGrid()
+}
+
+/* GRID */
+function renderGrid(){
+  grid.innerHTML=""
+
+  sequence.split("").forEach((aa,i)=>{
+    const box=document.createElement("div")
+    box.className="w-10 h-12 border rounded flex flex-col justify-center items-center cursor-pointer"
+
+    box.innerHTML=`<div>${aa}</div><div style="font-size:10px">${i+1}</div>`
+
+    box.onclick=()=>{
+      if(manualMask.has(i)){
+        manualMask.delete(i)
+        box.classList.remove("bg-red-400","text-white")
+      }else{
+        manualMask.add(i)
+        box.classList.add("bg-red-400","text-white")
+      }
+    }
+
+    grid.appendChild(box)
+  })
+}
+
+/* GENERATE */
+document.getElementById("genBtn").onclick = ()=>{
+  const btn = document.getElementById("genBtn")
+  btn.innerHTML=`<span class="spinner"></span>`
+
+  setTimeout(()=>{
+
+    let newSeqs=[]
+
+    /* manual */
+    if(manualMask.size){
+      let arr=[...sequence]
+      manualMask.forEach(i=>arr[i]="_")
+      newSeqs.push(arr.join(""))
+    }
+
+    /* sliding toggle */
+    const useSliding = document.getElementById("useSliding").checked
+
+    if(useSliding){
+      let w=+document.getElementById("win").value
+      let s=+document.getElementById("step").value
+
+      for(let i=0;i<=sequence.length-w;i+=s){
+        let arr=[...sequence]
+        for(let j=0;j<w;j++) arr[i+j]="_"
+        newSeqs.push(arr.join(""))
+      }
+    }
+
+    /* merge unique */
+    newSeqs.forEach(seq=>{
+      if(!library.includes(seq)) library.push(seq)
+    })
+
+    renderList()
+    btn.innerHTML="Generate"
+
+  },200)
+}
+
+/* LIST */
+function renderList(){
+  list.innerHTML=""
+
+  library.forEach(seq=>{
+    const row=document.createElement("div")
+    row.className="flex justify-between bg-white p-2 rounded"
+
+    const txt=document.createElement("span")
+    txt.className="font-mono text-xs"
+    txt.innerText=seq
+
+    const actions=document.createElement("div")
+    actions.className="flex gap-2"
+
+    const copyBtn=document.createElement("button")
+    copyBtn.className="text-xs bg-slate-200 px-2 rounded"
+    copyBtn.innerText="Copy"
+    copyBtn.onclick=()=>copy(copyBtn,seq)
+
+    const delBtn=document.createElement("button")
+    delBtn.innerText="✕"
+    delBtn.className="text-red-500 text-xs"
+    delBtn.onclick=()=>{
+      library = library.filter(s=>s!==seq)
+      renderList()
+    }
+
+    actions.append(copyBtn,delBtn)
+    row.append(txt,actions)
+    list.appendChild(row)
+  })
+}
+
+/* COPY */
+document.getElementById("copyAll").onclick=()=>{
+  copy(document.getElementById("copyAll"),library.join("\\n"))
+}
+
+function copy(btn,text){
+  navigator.clipboard.writeText(text)
+  btn.classList.add("copy-success")
+  btn.innerText="✓"
+  setTimeout(()=>{
+    btn.classList.remove("copy-success")
+    btn.innerText="Copy"
+  },700)
+}
+
+</script>
+
+</body>
+</html>
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+<div class="max-w-6xl mx-auto p-8">
+
+<!-- HEADER -->
+<div class="mb-8">
+  <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
+  <p class="text-sm text-slate-500">Bioengineering Workbench</p>
+</div>
+
+<!-- NAV -->
+<div class="flex gap-2 mb-6">
+  <button data-page="po" class="nav-btn active">Purchase</button>
+  <button data-page="align" class="nav-btn">Alignment</button>
+  <button data-page="eng" class="nav-btn">Engineering</button>
+  <button data-page="mask" class="nav-btn">Masking</button>
+</div>
+
+<!-- CARD -->
+<div class="bg-white rounded-xl p-6 shadow">
+
+<!-- PURCHASE -->
+<div id="po" class="view">
+  <p class="text-sm text-slate-500">Purchase system coming soon</p>
+</div>
+
+<!-- ALIGNMENT -->
+<div id="align" class="view hidden">
+  <textarea id="seq" class="w-full p-2 border rounded font-mono"></textarea>
+  <div id="output" class="mt-3 font-mono text-sm"></div>
+</div>
+
+<!-- ENGINEERING -->
+<div id="eng" class="view hidden">
+  <p class="text-sm text-slate-500">Engineering module coming soon</p>
+</div>
+
+<!-- MASKING -->
+<div id="mask" class="view hidden">
+
+<h2 class="text-lg mb-4 text-center">🎭 Masking Engine</h2>
+
+<input id="seqInput"
+  class="w-full max-w-xl mx-auto block p-2 border rounded font-mono text-center mb-4"
+  placeholder="Paste sequence">
+
 <p class="text-center text-xs text-slate-500 mb-4">
   Click residues to mask manually + use Generate for sliding
 </p>
