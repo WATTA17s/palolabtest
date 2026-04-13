@@ -28,13 +28,368 @@ body { font-family: sans-serif; }
 }
 @keyframes spin { to { transform:rotate(360deg) } }
 
-/* toggle */
 .toggle {
   width:40px;height:20px;background:#ccc;border-radius:999px;position:relative;cursor:pointer;
 }
 .toggle::after {
   content:"";width:16px;height:16px;background:white;position:absolute;top:2px;left:2px;border-radius:50%;
   transition:0.2s;
+}
+.toggle.active { background:#4f46e5; }
+.toggle.active::after { transform:translateX(20px); }
+</style>
+</head>
+
+<body class="bg-slate-100 text-slate-800 min-h-screen">
+
+<div class="max-w-6xl mx-auto p-8">
+
+<h1 class="text-3xl font-semibold mb-6">🧬 Pa1oLAB</h1>
+
+<!-- NAV -->
+<div class="flex gap-2 mb-6">
+  <button data-page="po" class="nav-btn active">Purchase</button>
+  <button data-page="align" class="nav-btn">Alignment</button>
+  <button data-page="eng" class="nav-btn">Engineering</button>
+  <button data-page="mask" class="nav-btn">Masking</button>
+</div>
+
+<div class="bg-white p-6 rounded-xl shadow">
+
+<!-- PURCHASE -->
+<div id="po" class="view">
+  <p class="text-sm text-slate-500">Coming soon</p>
+</div>
+
+<!-- ALIGN -->
+<div id="align" class="view hidden">
+
+<textarea id="alignInput" class="w-full p-2 border rounded font-mono mb-3"
+placeholder=">ref
+MKTALVAG
+>mut1
+MKTAIVAG"></textarea>
+
+<button onclick="runAlign()" class="bg-indigo-600 text-white px-3 py-1 rounded mb-3">
+Align
+</button>
+
+<div id="alignOutput" class="font-mono text-sm space-y-3"></div>
+
+<div class="mt-4">
+  <h3 class="text-sm font-semibold">Mutation Summary</h3>
+  <div id="mutationBox" class="text-xs font-mono"></div>
+</div>
+
+</div>
+
+<!-- ENGINEERING -->
+<div id="eng" class="view hidden">
+  <p class="text-sm text-slate-500">Coming soon</p>
+</div>
+
+<!-- MASK -->
+<div id="mask" class="view hidden">
+
+<input id="seqInput"
+class="w-full p-2 border rounded font-mono text-center mb-3"
+placeholder="Paste sequence">
+
+<div class="flex justify-center gap-3 mb-3">
+  <span>Sliding</span>
+  <div id="toggle" class="toggle active"></div>
+</div>
+
+<div class="flex justify-center gap-2 mb-3">
+  <input id="win" type="number" value="5" class="w-16 border text-center">
+  <input id="step" type="number" value="1" class="w-16 border text-center">
+  <button id="genBtn" class="bg-indigo-600 text-white px-3 rounded">Generate</button>
+</div>
+
+<div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+
+<div class="bg-slate-100 p-3 rounded">
+  <div class="flex justify-between mb-2">
+    <span class="text-xs">Library</span>
+    <button id="copyAll" class="text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
+  </div>
+  <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+<script>
+
+/* NAV */
+document.querySelectorAll("[data-page]").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
+    btn.classList.add("active")
+
+    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
+    document.getElementById(btn.dataset.page).classList.remove("hidden")
+  }
+})
+
+/* FASTA */
+function parseFASTA(text){
+  return text.trim().split(">")
+  .filter(x=>x)
+  .map(b=>{
+    const lines=b.split("\n")
+    return {
+      name:lines[0],
+      seq:lines.slice(1).join("").replace(/\s/g,"").toUpperCase()
+    }
+  })
+}
+
+/* NEEDLEMAN-WUNSCH */
+function alignPair(seq1, seq2){
+  const gap=-2, match=1, mismatch=-1
+  const m=seq1.length, n=seq2.length
+  let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
+
+  for(let i=0;i<=m;i++) dp[i][0]=i*gap
+  for(let j=0;j<=n;j++) dp[0][j]=j*gap
+
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      const diag=dp[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch)
+      const up=dp[i-1][j]+gap
+      const left=dp[i][j-1]+gap
+      dp[i][j]=Math.max(diag,up,left)
+    }
+  }
+
+  let a1="",a2=""
+  let i=m,j=n
+
+  while(i>0||j>0){
+    if(i>0&&j>0&&dp[i][j]===dp[i-1][j-1]+(seq1[i-1]===seq2[j-1]?match:mismatch)){
+      a1=seq1[i-1]+a1
+      a2=seq2[j-1]+a2
+      i--;j--
+    }else if(i>0&&dp[i][j]===dp[i-1][j]+gap){
+      a1=seq1[i-1]+a1
+      a2="-"+a2
+      i--
+    }else{
+      a1="-"+a1
+      a2=seq2[j-1]+a2
+      j--
+    }
+  }
+
+  return [a1,a2]
+}
+
+/* ALIGN */
+function runAlign(){
+  const data=parseFASTA(document.getElementById("alignInput").value)
+  if(data.length<2) return
+
+  const ref=data[0]
+  let aligned=[ref.seq]
+
+  data.slice(1).forEach(d=>{
+    const [r,o]=alignPair(ref.seq,d.seq)
+    aligned[0]=r
+    aligned.push(o)
+  })
+
+  renderAlignment(data.map(d=>d.name),aligned)
+}
+
+/* RENDER */
+function renderAlignment(names,seqs){
+  const out=document.getElementById("alignOutput")
+  const mutBox=document.getElementById("mutationBox")
+
+  out.innerHTML=""
+  mutBox.innerHTML=""
+
+  const len=seqs[0].length
+
+  seqs.forEach((seq,idx)=>{
+    let html=""
+    for(let i=0;i<len;i++){
+      let color=""
+      if(idx!==0 && seq[i]!==seqs[0][i]){
+        color="bg-red-400 text-white"
+      }
+
+      html+=`
+      <span onclick="jumpToMask(${i})"
+      class="inline-block w-5 text-center cursor-pointer ${color}">
+      ${seq[i]}</span>`
+    }
+
+    const row=document.createElement("div")
+    row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
+    out.appendChild(row)
+  })
+
+  /* consensus */
+  let cons=""
+  for(let i=0;i<len;i++){
+    const col=seqs.map(s=>s[i])
+    cons+=col.every(c=>c===col[0])?"*":"."
+  }
+
+  let consHTML=""
+  for(let c of cons){
+    consHTML+=`<span class="inline-block w-5 text-center">${c}</span>`
+  }
+
+  const consRow=document.createElement("div")
+  consRow.innerHTML=`<div class="text-xs">consensus</div>${consHTML}`
+  out.appendChild(consRow)
+
+  /* mutation summary */
+  seqs.slice(1).forEach((seq,idx)=>{
+    let muts=[]
+    for(let i=0;i<len;i++){
+      if(seq[i]!==seqs[0][i]){
+        muts.push(`${seqs[0][i]}${i+1}→${seq[i]}`)
+      }
+    }
+    const line=document.createElement("div")
+    line.innerText=`${names[idx+1]}: ${muts.join(", ")}`
+    mutBox.appendChild(line)
+  })
+}
+
+/* MASK */
+let sequence=""
+let manualMask=new Set()
+let library=[]
+let useSliding=true
+
+const grid=document.getElementById("grid")
+const list=document.getElementById("list")
+
+document.getElementById("seqInput").oninput=e=>{
+  sequence=e.target.value.replace(/\s/g,"").toUpperCase()
+  manualMask.clear()
+  renderGrid()
+}
+
+document.getElementById("toggle").onclick=()=>{
+  useSliding=!useSliding
+  document.getElementById("toggle").classList.toggle("active",useSliding)
+}
+
+function renderGrid(){
+  grid.innerHTML=""
+  sequence.split("").forEach((aa,i)=>{
+    const box=document.createElement("div")
+    box.className="w-10 h-12 border rounded flex flex-col justify-center items-center cursor-pointer"
+
+    box.innerHTML=`<div>${aa}</div><div style="font-size:10px">${i+1}</div>`
+
+    box.onclick=()=>{
+      if(manualMask.has(i)){
+        manualMask.delete(i)
+        box.classList.remove("bg-red-400","text-white")
+      }else{
+        manualMask.add(i)
+        box.classList.add("bg-red-400","text-white")
+      }
+    }
+
+    grid.appendChild(box)
+  })
+}
+
+document.getElementById("genBtn").onclick=()=>{
+  if(!sequence) return
+
+  let newSeqs=[]
+
+  if(manualMask.size){
+    let arr=[...sequence]
+    manualMask.forEach(i=>arr[i]="_")
+    newSeqs.push(arr.join(""))
+  }
+
+  if(useSliding){
+    let w=Math.max(1,+document.getElementById("win").value)
+    let s=Math.max(1,+document.getElementById("step").value)
+
+    if(w<=sequence.length){
+      for(let i=0;i<=sequence.length-w;i+=s){
+        let arr=[...sequence]
+        for(let j=0;j<w;j++) arr[i+j]="_"
+        newSeqs.push(arr.join(""))
+      }
+    }
+  }
+
+  newSeqs.forEach(seq=>{
+    if(!library.includes(seq)) library.push(seq)
+  })
+
+  renderList()
+}
+
+function renderList(){
+  list.innerHTML=""
+  library.forEach(seq=>{
+    const row=document.createElement("div")
+    row.className="flex justify-between bg-white p-2 rounded"
+
+    const txt=document.createElement("span")
+    txt.className="font-mono text-xs"
+    txt.innerText=seq
+
+    const del=document.createElement("button")
+    del.innerText="✕"
+    del.onclick=()=>{
+      library=library.filter(s=>s!==seq)
+      renderList()
+    }
+
+    row.append(txt,del)
+    list.appendChild(row)
+  })
+}
+
+document.getElementById("copyAll").onclick=()=>{
+  navigator.clipboard.writeText(library.join("\n"))
+}
+
+/* CLICK ALIGN → MASK */
+function jumpToMask(pos){
+  document.querySelector('[data-page="mask"]').click()
+
+  const data=parseFASTA(document.getElementById("alignInput").value)
+  if(!data.length) return
+
+  sequence=data[0].seq
+  document.getElementById("seqInput").value=sequence
+
+  manualMask.clear()
+  manualMask.add(pos)
+
+  renderGrid()
+
+  setTimeout(()=>{
+    const boxes=document.querySelectorAll("#grid div")
+    if(boxes[pos]){
+      boxes[pos].classList.add("bg-red-400","text-white")
+      boxes[pos].scrollIntoView({behavior:"smooth",block:"center"})
+    }
+  },50)
+}
+
+</script>
+
+</body>
+</html>  transition:0.2s;
 }
 .toggle.active { background:#4f46e5; }
 .toggle.active::after { transform:translateX(20px); }
