@@ -9,7 +9,6 @@
 <style>
 body { font-family: sans-serif; }
 
-/* NAV */
 .nav-btn {
   padding: 8px 14px;
   border-radius: 10px;
@@ -19,13 +18,11 @@ body { font-family: sans-serif; }
 }
 .nav-btn.active { background:#4f46e5; color:white; }
 
-/* COPY */
 .copy-success {
   background:#22c55e !important;
   color:white !important;
 }
 
-/* SPINNER */
 .spinner {
   width:12px;height:12px;
   border:2px solid #fff;
@@ -35,7 +32,6 @@ body { font-family: sans-serif; }
   display:inline-block;
 }
 @keyframes spin { to { transform:rotate(360deg) } }
-
 </style>
 </head>
 
@@ -44,11 +40,9 @@ body { font-family: sans-serif; }
 <div class="max-w-6xl mx-auto p-8">
 
 <!-- HEADER -->
-<div class="flex justify-between items-center mb-8">
-  <div>
-    <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
-    <p class="text-sm text-slate-500">Bioengineering Workbench</p>
-  </div>
+<div class="mb-8">
+  <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
+  <p class="text-sm text-slate-500">Bioengineering Workbench</p>
 </div>
 
 <!-- NAV -->
@@ -87,16 +81,14 @@ body { font-family: sans-serif; }
   class="w-full max-w-xl mx-auto block p-2 border rounded font-mono text-center mb-4"
   placeholder="Paste sequence">
 
-<div class="flex gap-2 justify-center mb-2">
-  <button id="manualBtn" class="nav-btn active">Manual</button>
-  <button id="slideBtn" class="nav-btn">Sliding</button>
-</div>
-
-<p id="modeLabel" class="text-center text-xs mb-4">Mode: manual</p>
+<p class="text-center text-xs text-slate-500 mb-4">
+  Click residues to mask manually + use Generate for sliding
+</p>
 
 <div class="flex gap-2 justify-center mb-4">
   <input id="win" type="number" value="5" class="w-16 border text-center">
   <input id="step" type="number" value="1" class="w-16 border text-center">
+
   <button id="genBtn" class="bg-indigo-600 text-white px-3 rounded flex items-center gap-2">
     Generate
   </button>
@@ -109,7 +101,7 @@ body { font-family: sans-serif; }
     <span class="text-xs">Library</span>
     <button id="copyAll" class="text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
   </div>
-  <div id="list" class="space-y-2 max-h-40 overflow-y-auto"></div>
+  <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
 </div>
 
 </div>
@@ -141,9 +133,8 @@ document.getElementById("seq").oninput = e=>{
   document.getElementById("output").innerHTML = html
 }
 
-/* MASK ENGINE (stable) */
+/* MASK ENGINE */
 let sequence = ""
-let mode = "manual"
 let manualMask = new Set()
 let library = []
 
@@ -154,20 +145,6 @@ document.getElementById("seqInput").oninput = e=>{
   sequence = e.target.value.toUpperCase()
   manualMask.clear()
   renderGrid()
-}
-
-/* MODE */
-document.getElementById("manualBtn").onclick=()=>{
-  mode="manual"; updateMode()
-}
-document.getElementById("slideBtn").onclick=()=>{
-  mode="slide"; updateMode()
-}
-
-function updateMode(){
-  document.getElementById("modeLabel").innerText="Mode: "+mode
-  document.getElementById("manualBtn").classList.toggle("active",mode==="manual")
-  document.getElementById("slideBtn").classList.toggle("active",mode==="slide")
 }
 
 /* GRID */
@@ -181,14 +158,12 @@ function renderGrid(){
     box.innerHTML=`<div>${aa}</div><div style="font-size:10px">${i+1}</div>`
 
     box.onclick=()=>{
-      if(mode!=="manual") return
-
       if(manualMask.has(i)){
         manualMask.delete(i)
-        box.style.background=""
+        box.classList.remove("bg-red-400","text-white")
       }else{
         manualMask.add(i)
-        box.style.background="#f87171"
+        box.classList.add("bg-red-400","text-white")
       }
     }
 
@@ -205,12 +180,14 @@ document.getElementById("genBtn").onclick = ()=>{
 
     let newSeqs=[]
 
+    /* manual */
     if(manualMask.size){
       let arr=[...sequence]
       manualMask.forEach(i=>arr[i]="_")
       newSeqs.push(arr.join(""))
     }
 
+    /* sliding */
     let w=+document.getElementById("win").value
     let s=+document.getElementById("step").value
 
@@ -220,6 +197,7 @@ document.getElementById("genBtn").onclick = ()=>{
       newSeqs.push(arr.join(""))
     }
 
+    /* merge unique */
     newSeqs.forEach(seq=>{
       if(!library.includes(seq)) library.push(seq)
     })
@@ -246,7 +224,7 @@ function renderList(){
     actions.className="flex gap-2"
 
     const copyBtn=document.createElement("button")
-    copyBtn.className="btn text-xs"
+    copyBtn.className="text-xs bg-slate-200 px-2 rounded"
     copyBtn.innerText="Copy"
     copyBtn.onclick=()=>copy(copyBtn,seq)
 
@@ -266,7 +244,7 @@ function renderList(){
 
 /* COPY */
 document.getElementById("copyAll").onclick=()=>{
-  copy(document.getElementById("copyAll"),library.join("\n"))
+  copy(document.getElementById("copyAll"),library.join("\\n"))
 }
 
 function copy(btn,text){
