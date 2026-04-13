@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Pa1oLAB v2</title>
-
+<title>Pa1oLAB</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
@@ -18,40 +17,8 @@ body { font-family: sans-serif; }
 }
 .nav-btn.active { background:#4f46e5; color:white; }
 
-.copy-success {
-  background:#22c55e !important;
-  color:white !important;
-}
+.copy-success { background:#22c55e !important; color:white !important; }
 
-/* Toggle */
-.toggle {
-  width: 40px;
-  height: 20px;
-  background: #ccc;
-  border-radius: 999px;
-  position: relative;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.toggle::after {
-  content: "";
-  width: 16px;
-  height: 16px;
-  background: white;
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  border-radius: 50%;
-  transition: 0.2s;
-}
-.toggle.active {
-  background: #4f46e5;
-}
-.toggle.active::after {
-  transform: translateX(20px);
-}
-
-/* Spinner */
 .spinner {
   width:12px;height:12px;
   border:2px solid #fff;
@@ -60,6 +27,17 @@ body { font-family: sans-serif; }
   animation:spin .6s linear infinite;
 }
 @keyframes spin { to { transform:rotate(360deg) } }
+
+/* toggle */
+.toggle {
+  width:40px;height:20px;background:#ccc;border-radius:999px;position:relative;cursor:pointer;
+}
+.toggle::after {
+  content:"";width:16px;height:16px;background:white;position:absolute;top:2px;left:2px;border-radius:50%;
+  transition:0.2s;
+}
+.toggle.active { background:#4f46e5; }
+.toggle.active::after { transform:translateX(20px); }
 </style>
 </head>
 
@@ -67,11 +45,7 @@ body { font-family: sans-serif; }
 
 <div class="max-w-6xl mx-auto p-8">
 
-<!-- HEADER -->
-<div class="mb-8">
-  <h1 class="text-3xl font-semibold">🧬 Pa1oLAB</h1>
-  <p class="text-sm text-slate-500">Bioengineering Workbench</p>
-</div>
+<h1 class="text-3xl font-semibold mb-6">🧬 Pa1oLAB</h1>
 
 <!-- NAV -->
 <div class="flex gap-2 mb-6">
@@ -81,8 +55,7 @@ body { font-family: sans-serif; }
   <button data-page="mask" class="nav-btn">Masking</button>
 </div>
 
-<!-- CARD -->
-<div class="bg-white rounded-xl p-6 shadow">
+<div class="bg-white p-6 rounded-xl shadow">
 
 <!-- PURCHASE -->
 <div id="po" class="view">
@@ -91,54 +64,56 @@ body { font-family: sans-serif; }
 
 <!-- ALIGN -->
 <div id="align" class="view hidden">
-  <textarea id="seq" class="w-full p-2 border rounded font-mono"></textarea>
-  <div id="output" class="mt-3 font-mono text-sm"></div>
+
+<textarea id="alignInput" class="w-full p-2 border rounded font-mono mb-3"
+placeholder="Paste FASTA..."></textarea>
+
+<button onclick="runAlign()" class="bg-indigo-600 text-white px-3 py-1 rounded mb-3">
+Align
+</button>
+
+<div id="alignOutput" class="font-mono text-sm space-y-3"></div>
+
+<div class="mt-4">
+  <h3 class="text-sm font-semibold">Mutation Summary</h3>
+  <div id="mutationBox" class="text-xs font-mono"></div>
+</div>
+
 </div>
 
 <!-- ENGINEERING -->
 <div id="eng" class="view hidden">
-  <p class="text-sm text-slate-500">Engineering module coming soon</p>
+  <p class="text-sm text-slate-500">Coming soon</p>
 </div>
 
 <!-- MASK -->
 <div id="mask" class="view hidden">
 
-<h2 class="text-lg mb-4 text-center">🎭 Masking Engine</h2>
-
 <input id="seqInput"
-  class="w-full max-w-xl mx-auto block p-2 border rounded font-mono text-center mb-4"
-  placeholder="Paste sequence">
+class="w-full p-2 border rounded font-mono text-center mb-3"
+placeholder="Paste sequence">
 
-<p class="text-center text-xs text-slate-500 mb-4">
-  Click residues to mask manually
-</p>
-
-<!-- TOGGLE -->
-<div class="flex justify-center items-center gap-3 mb-4">
-  <span class="text-sm">Sliding</span>
+<div class="flex justify-center gap-3 mb-3">
+  <span>Sliding</span>
   <div id="toggle" class="toggle active"></div>
 </div>
 
-<!-- CONTROLS -->
-<div class="flex gap-2 justify-center mb-4">
+<div class="flex justify-center gap-2 mb-3">
   <input id="win" type="number" value="5" class="w-16 border text-center">
   <input id="step" type="number" value="1" class="w-16 border text-center">
-
-  <button id="genBtn" class="bg-indigo-600 text-white px-3 rounded flex items-center gap-2">
-    Generate
-  </button>
+  <button id="genBtn" class="bg-indigo-600 text-white px-3 rounded">Generate</button>
 </div>
 
-<!-- GRID -->
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
-<!-- OUTPUT -->
 <div class="bg-slate-100 p-3 rounded">
   <div class="flex justify-between mb-2">
     <span class="text-xs">Library</span>
     <button id="copyAll" class="text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
   </div>
   <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+</div>
+
 </div>
 
 </div>
@@ -157,17 +132,84 @@ document.querySelectorAll("[data-page]").forEach(btn=>{
   }
 })
 
-/* ALIGN */
-document.getElementById("seq").oninput=e=>{
-  const s=e.target.value
-  let html=""
-  for(let i=0;i<s.length;i++){
-    html+=`<span title="pos ${i+1}" class="inline-block w-4 text-center">${s[i]}</span>`
-  }
-  document.getElementById("output").innerHTML=html
+/* FASTA */
+function parseFASTA(text){
+  return text.trim().split(">")
+  .filter(x=>x)
+  .map(b=>{
+    const lines=b.split("\n")
+    return {
+      name:lines[0],
+      seq:lines.slice(1).join("").replace(/\s/g,"").toUpperCase()
+    }
+  })
 }
 
-/* STATE */
+/* ALIGN */
+function runAlign(){
+
+  const data=parseFASTA(document.getElementById("alignInput").value)
+  if(data.length<2) return
+
+  const ref=data[0]
+  const maxLen=Math.max(...data.map(d=>d.seq.length))
+
+  const out=document.getElementById("alignOutput")
+  const mutBox=document.getElementById("mutationBox")
+
+  out.innerHTML=""
+  mutBox.innerHTML=""
+
+  let consensus=""
+
+  for(let i=0;i<maxLen;i++){
+    const chars=data.map(d=>d.seq[i]||"-")
+    consensus+=chars.every(c=>c===chars[0])?"*":"."
+  }
+
+  data.forEach(d=>{
+    let html=""
+    for(let i=0;i<maxLen;i++){
+      const aa=d.seq[i]||"-"
+      let color=""
+      if(d!==ref && aa!==ref.seq[i]) color="bg-red-400 text-white"
+
+      html+=`
+      <span onclick="jumpToMask(${i})"
+      class="inline-block w-5 text-center cursor-pointer ${color}">
+      ${aa}</span>`
+    }
+
+    const row=document.createElement("div")
+    row.innerHTML=`<div class="text-xs">${d.name}</div>${html}`
+    out.appendChild(row)
+  })
+
+  /* consensus */
+  let consHTML=""
+  for(let c of consensus){
+    consHTML+=`<span class="inline-block w-5 text-center">${c}</span>`
+  }
+  const consRow=document.createElement("div")
+  consRow.innerHTML=`<div class="text-xs">consensus</div>${consHTML}`
+  out.appendChild(consRow)
+
+  /* mutations */
+  data.slice(1).forEach(d=>{
+    let muts=[]
+    for(let i=0;i<maxLen;i++){
+      if((ref.seq[i]||"-")!==(d.seq[i]||"-")){
+        muts.push(`${ref.seq[i]||"-"}${i+1}→${d.seq[i]||"-"}`)
+      }
+    }
+    const line=document.createElement("div")
+    line.innerText=`${d.name}: ${muts.join(", ")}`
+    mutBox.appendChild(line)
+  })
+
+}
+
+/* MASK ENGINE */
 let sequence=""
 let manualMask=new Set()
 let library=[]
@@ -176,23 +218,19 @@ let useSliding=true
 const grid=document.getElementById("grid")
 const list=document.getElementById("list")
 
-/* TOGGLE */
-document.getElementById("toggle").onclick=()=>{
-  useSliding=!useSliding
-  document.getElementById("toggle").classList.toggle("active",useSliding)
-}
-
-/* INPUT */
 document.getElementById("seqInput").oninput=e=>{
   sequence=e.target.value.replace(/\s/g,"").toUpperCase()
   manualMask.clear()
   renderGrid()
 }
 
-/* GRID */
+document.getElementById("toggle").onclick=()=>{
+  useSliding=!useSliding
+  document.getElementById("toggle").classList.toggle("active",useSliding)
+}
+
 function renderGrid(){
   grid.innerHTML=""
-
   sequence.split("").forEach((aa,i)=>{
     const box=document.createElement("div")
     box.className="w-10 h-12 border rounded flex flex-col justify-center items-center cursor-pointer"
@@ -213,7 +251,6 @@ function renderGrid(){
   })
 }
 
-/* GENERATE */
 document.getElementById("genBtn").onclick=()=>{
   if(!sequence) return
 
@@ -224,19 +261,17 @@ document.getElementById("genBtn").onclick=()=>{
 
     let newSeqs=[]
 
-    /* manual */
     if(manualMask.size){
       let arr=[...sequence]
       manualMask.forEach(i=>arr[i]="_")
       newSeqs.push(arr.join(""))
     }
 
-    /* sliding */
     if(useSliding){
       let w=Math.max(1,+document.getElementById("win").value)
       let s=Math.max(1,+document.getElementById("step").value)
 
-      if(w <= sequence.length){
+      if(w<=sequence.length){
         for(let i=0;i<=sequence.length-w;i+=s){
           let arr=[...sequence]
           for(let j=0;j<w;j++) arr[i+j]="_"
@@ -245,7 +280,6 @@ document.getElementById("genBtn").onclick=()=>{
       }
     }
 
-    /* merge unique */
     newSeqs.forEach(seq=>{
       if(!library.includes(seq)) library.push(seq)
     })
@@ -256,10 +290,8 @@ document.getElementById("genBtn").onclick=()=>{
   },200)
 }
 
-/* LIST */
 function renderList(){
   list.innerHTML=""
-
   library.forEach(seq=>{
     const row=document.createElement("div")
     row.className="flex justify-between bg-white p-2 rounded"
@@ -269,18 +301,15 @@ function renderList(){
     txt.innerText=seq
 
     const actions=document.createElement("div")
-    actions.className="flex gap-2"
 
     const copyBtn=document.createElement("button")
-    copyBtn.className="text-xs bg-slate-200 px-2 rounded"
     copyBtn.innerText="Copy"
     copyBtn.onclick=()=>copy(copyBtn,seq)
 
     const delBtn=document.createElement("button")
     delBtn.innerText="✕"
-    delBtn.className="text-red-500 text-xs"
     delBtn.onclick=()=>{
-      library = library.filter(s=>s!==seq)
+      library=library.filter(s=>s!==seq)
       renderList()
     }
 
@@ -290,19 +319,40 @@ function renderList(){
   })
 }
 
-/* COPY */
 document.getElementById("copyAll").onclick=()=>{
   copy(document.getElementById("copyAll"),library.join("\n"))
 }
 
 function copy(btn,text){
   navigator.clipboard.writeText(text)
-  btn.classList.add("copy-success")
   btn.innerText="✓"
+  setTimeout(()=>btn.innerText="Copy",700)
+}
+
+/* CLICK ALIGN → MASK */
+function jumpToMask(pos){
+
+  /* switch page */
+  document.querySelector('[data-page="mask"]').click()
+
+  const data=parseFASTA(document.getElementById("alignInput").value)
+  if(!data.length) return
+
+  sequence=data[0].seq
+  document.getElementById("seqInput").value=sequence
+
+  manualMask.clear()
+  manualMask.add(pos)
+
+  renderGrid()
+
   setTimeout(()=>{
-    btn.classList.remove("copy-success")
-    btn.innerText="Copy"
-  },700)
+    const boxes=document.querySelectorAll("#grid div")
+    if(boxes[pos]){
+      boxes[pos].classList.add("bg-red-400","text-white")
+      boxes[pos].scrollIntoView({behavior:"smooth",block:"center"})
+    }
+  },50)
 }
 
 </script>
