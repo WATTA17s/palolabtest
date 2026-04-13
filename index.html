@@ -7,13 +7,7 @@
 
 <style>
 body { font-family: sans-serif; }
-
-.nav-btn {
-  padding: 8px 14px;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-}
+.nav-btn { padding:8px 14px; border-radius:10px; background:white; cursor:pointer; }
 .nav-btn.active { background:#4f46e5; color:white; }
 
 .toggle {
@@ -21,7 +15,6 @@ body { font-family: sans-serif; }
 }
 .toggle::after {
   content:"";width:16px;height:16px;background:white;position:absolute;top:2px;left:2px;border-radius:50%;
-  transition:0.2s;
 }
 .toggle.active { background:#4f46e5; }
 .toggle.active::after { transform:translateX(20px); }
@@ -34,7 +27,6 @@ body { font-family: sans-serif; }
 
 <h1 class="text-3xl mb-6">🧬 Pa1oLAB</h1>
 
-<!-- NAV -->
 <div class="flex gap-2 mb-6">
   <button data-page="align" class="nav-btn active">Alignment</button>
   <button data-page="mask" class="nav-btn">Masking</button>
@@ -67,6 +59,8 @@ Align
 <!-- MASK -->
 <div id="mask" class="view hidden">
 
+<div id="currentSeqLabel" class="text-sm text-center mb-2 text-slate-500"></div>
+
 <input id="seqInput" class="w-full p-2 border rounded font-mono text-center mb-3">
 
 <div class="flex justify-center gap-3 mb-3">
@@ -82,7 +76,6 @@ Align
 
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
-<!-- LIBRARY -->
 <div class="bg-slate-100 p-3 rounded">
   <div class="flex justify-between mb-2">
     <span class="text-xs">Library</span>
@@ -100,10 +93,11 @@ Align
 
 /* STATE */
 let state = {
-  sequence: "",
-  manualMask: new Set(),
-  library: [],
-  useSliding: false
+  sequence:"",
+  sequenceName:"",
+  manualMask:new Set(),
+  library:[],
+  useSliding:false
 }
 
 /* NAV */
@@ -111,7 +105,6 @@ document.querySelectorAll("[data-page]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
     btn.classList.add("active")
-
     document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
     document.getElementById(btn.dataset.page).classList.remove("hidden")
   }
@@ -122,20 +115,20 @@ function parseFASTA(text){
   return text.trim().split(">")
   .filter(x=>x)
   .map(b=>{
-    const l=b.split("\n")
+    let l=b.split("\n")
     return {name:l[0], seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()}
   })
 }
 
-/* ALIGN */
+/* ALIGN CORE */
 function score(a,b){
   if(a==="-"||b==="-") return -4
-  return a===b ? 2 : -1
+  return a===b?2:-1
 }
 
 function alignPair(s1,s2){
-  const gap=-4
-  const m=s1.length,n=s2.length
+  let gap=-4
+  let m=s1.length,n=s2.length
   let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
 
   for(let i=0;i<=m;i++) dp[i][0]=i*gap
@@ -152,6 +145,7 @@ function alignPair(s1,s2){
   }
 
   let a1="",a2="",i=m,j=n
+
   while(i>0||j>0){
     if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
       a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
@@ -163,33 +157,40 @@ function alignPair(s1,s2){
       a1="-"+a1; a2=s2[j-1]+a2; j--
     }
   }
+
   return [a1,a2]
 }
 
+/* MSA FIX */
 function runAlign(){
+
   const data=parseFASTA(document.getElementById("alignInput").value)
   if(data.length<2) return
 
-  const ref=data[0]
-  let aligned=[ref.seq]
+  let aligned=[data[0].seq]
 
-  data.slice(1).forEach(d=>{
-    const [r,o]=alignPair(ref.seq,d.seq)
-    aligned[0]=r
-    aligned.push(o)
-  })
+  for(let k=1;k<data.length;k++){
+
+    let seq=data[k].seq
+    const [newRef,newSeq]=alignPair(aligned[0],seq)
+
+    aligned=aligned.map(old=>{
+      let res="",idx=0
+      for(let i=0;i<newRef.length;i++){
+        if(newRef[i]==="-") res+="-"
+        else res+=old[idx++]||"-"
+      }
+      return res
+    })
+
+    aligned[0]=newRef
+    aligned.push(newSeq)
+  }
 
   renderAlignment(data.map(d=>d.name),aligned)
 }
 
-function aaColor(a){
-  if("AVLIMFWY".includes(a)) return "#fde68a"
-  if("KRH".includes(a)) return "#93c5fd"
-  if("DE".includes(a)) return "#fca5a5"
-  if("STNQ".includes(a)) return "#86efac"
-  return ""
-}
-
+/* RENDER */
 function renderAlignment(names,seqs){
 
   const out=document.getElementById("alignOutput")
@@ -198,7 +199,7 @@ function renderAlignment(names,seqs){
   out.innerHTML=""
   mutBox.innerHTML=""
 
-  const len=seqs[0].length
+  let len=seqs[0].length
 
   let freq=Array(len).fill(0)
   for(let i=0;i<len;i++){
@@ -211,11 +212,11 @@ function renderAlignment(names,seqs){
     let html=""
     for(let i=0;i<len;i++){
       let heat=freq[i]/seqs.length
-      let mut=(idx!==0 && seq[i]!==seqs[0][i])?"outline outline-2 outline-red-500":""
+      let mut=(idx!==0 && seq[i]!==seqs[0][i])?"outline outline-red-500":""
 
       html+=`
-      <span onclick="jumpToMask(${i})"
-      style="background:${aaColor(seq[i])}; background-color:rgba(255,0,0,${heat})"
+      <span onclick="jumpToMask(${idx}, ${i})"
+      style="background:rgba(255,0,0,${heat})"
       class="inline-block w-6 text-center cursor-pointer ${mut}">
       ${seq[i]}</span>`
     }
@@ -265,8 +266,7 @@ function renderGrid(){
     if(state.manualMask.has(i)) box.classList.add("bg-red-400")
 
     box.onclick=()=>{
-      if(state.manualMask.has(i)) state.manualMask.delete(i)
-      else state.manualMask.add(i)
+      state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
       renderGrid()
     }
 
@@ -289,12 +289,10 @@ document.getElementById("genBtn").onclick=()=>{
     let w=Math.max(1,+win.value)
     let s=Math.max(1,+step.value)
 
-    if(w<=state.sequence.length){
-      for(let i=0;i<=state.sequence.length-w;i+=s){
-        let arr=[...state.sequence]
-        for(let j=0;j<w;j++) arr[i+j]="_"
-        newSeqs.push(arr.join(""))
-      }
+    for(let i=0;i<=state.sequence.length-w;i+=s){
+      let arr=[...state.sequence]
+      for(let j=0;j<w;j++) arr[i+j]="_"
+      newSeqs.push(arr.join(""))
     }
   }
 
@@ -307,7 +305,6 @@ document.getElementById("genBtn").onclick=()=>{
 
 function renderList(){
   list.innerHTML=""
-
   state.library.forEach(seq=>{
     let row=document.createElement("div")
     row.className="flex justify-between bg-white p-2 rounded items-center"
@@ -321,11 +318,10 @@ function renderList(){
     let copy=document.createElement("button")
     copy.innerText="Copy"
     copy.className="text-xs bg-slate-200 px-2 rounded"
-    copy.onclick=()=>copyText(copy,seq)
+    copy.onclick=()=>navigator.clipboard.writeText(seq)
 
     let del=document.createElement("button")
     del.innerText="✕"
-    del.className="text-red-500 text-xs"
     del.onclick=()=>{
       state.library=state.library.filter(x=>x!==seq)
       renderList()
@@ -337,27 +333,28 @@ function renderList(){
   })
 }
 
-function copyText(btn,text){
-  navigator.clipboard.writeText(text)
-  btn.innerText="✓"
-  setTimeout(()=>btn.innerText="Copy",700)
-}
-
 document.getElementById("copyAll").onclick=()=>{
   navigator.clipboard.writeText(state.library.join("\n"))
 }
 
-/* CLICK */
-function jumpToMask(pos){
+/* FIXED CLICK */
+function jumpToMask(seqIndex, pos){
+
   document.querySelector('[data-page="mask"]').click()
 
   const data=parseFASTA(document.getElementById("alignInput").value)
   if(!data.length) return
 
-  state.sequence=data[0].seq
-  document.getElementById("seqInput").value=state.sequence
+  const selected=data[seqIndex]
+
+  state.sequence=selected.seq
+  state.sequenceName=selected.name
+
+  document.getElementById("seqInput").value=selected.seq
+  document.getElementById("currentSeqLabel").innerText="Editing: "+selected.name
 
   state.manualMask=new Set([pos])
+
   renderGrid()
 }
 
