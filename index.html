@@ -34,6 +34,7 @@ body { font-family: sans-serif; }
 
 <h1 class="text-3xl mb-6">🧬 Pa1oLAB</h1>
 
+<!-- NAV -->
 <div class="flex gap-2 mb-6">
   <button data-page="align" class="nav-btn active">Alignment</button>
   <button data-page="mask" class="nav-btn">Masking</button>
@@ -90,7 +91,19 @@ Align
 
 <script>
 
-/* NAV */
+/* =========================
+   GLOBAL STATE
+========================= */
+let state = {
+  sequence: "",
+  manualMask: new Set(),
+  library: [],
+  useSliding: true
+}
+
+/* =========================
+   NAV
+========================= */
 document.querySelectorAll("[data-page]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
@@ -101,26 +114,34 @@ document.querySelectorAll("[data-page]").forEach(btn=>{
   }
 })
 
-/* FASTA */
+/* =========================
+   FASTA PARSER
+========================= */
 function parseFASTA(text){
   return text.trim().split(">")
   .filter(x=>x)
   .map(b=>{
     const l=b.split("\n")
-    return {name:l[0], seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()}
+    return {
+      name:l[0],
+      seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()
+    }
   })
 }
 
-/* BLOSUM (simplified) */
+/* =========================
+   ALIGNMENT ENGINE
+========================= */
 function score(a,b){
   if(a==="-"||b==="-") return -4
   return a===b ? 2 : -1
 }
 
-/* ALIGN */
 function alignPair(s1,s2){
+
   const gap=-4
-  let m=s1.length,n=s2.length
+  const m=s1.length,n=s2.length
+
   let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
 
   for(let i=0;i<=m;i++) dp[i][0]=i*gap
@@ -136,7 +157,8 @@ function alignPair(s1,s2){
     }
   }
 
-  let a1="",a2="",i=m,j=n
+  let a1="",a2=""
+  let i=m,j=n
 
   while(i>0||j>0){
     if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
@@ -153,25 +175,20 @@ function alignPair(s1,s2){
   return [a1,a2]
 }
 
-/* COLOR */
-function aaColor(a){
-  if("AVLIMFWY".includes(a)) return "bg-yellow-200"
-  if("KRH".includes(a)) return "bg-blue-200"
-  if("DE".includes(a)) return "bg-red-200"
-  if("STNQ".includes(a)) return "bg-green-200"
-  return ""
-}
-
-/* RUN ALIGN */
+/* =========================
+   RUN ALIGN
+========================= */
 function runAlign(){
+
   const data=parseFASTA(document.getElementById("alignInput").value)
   if(data.length<2) return
 
-  let ref=data[0]
+  const ref=data[0]
+
   let aligned=[ref.seq]
 
   data.slice(1).forEach(d=>{
-    let [r,o]=alignPair(ref.seq,d.seq)
+    const [r,o]=alignPair(ref.seq,d.seq)
     aligned[0]=r
     aligned.push(o)
   })
@@ -179,7 +196,20 @@ function runAlign(){
   renderAlignment(data.map(d=>d.name),aligned)
 }
 
-/* RENDER */
+/* =========================
+   COLOR
+========================= */
+function aaColor(a){
+  if("AVLIMFWY".includes(a)) return "#fde68a"
+  if("KRH".includes(a)) return "#93c5fd"
+  if("DE".includes(a)) return "#fca5a5"
+  if("STNQ".includes(a)) return "#86efac"
+  return ""
+}
+
+/* =========================
+   RENDER ALIGNMENT
+========================= */
 function renderAlignment(names,seqs){
 
   const out=document.getElementById("alignOutput")
@@ -188,29 +218,40 @@ function renderAlignment(names,seqs){
   out.innerHTML=""
   mutBox.innerHTML=""
 
-  let len=seqs[0].length
+  const len=seqs[0].length
 
   let freq=Array(len).fill(0)
+
   for(let i=0;i<len;i++){
-    seqs.slice(1).forEach(s=>{
-      if(s[i]!==seqs[0][i]) freq[i]++
-    })
+    for(let j=1;j<seqs.length;j++){
+      if(seqs[j][i]!==seqs[0][i]) freq[i]++
+    }
   }
 
   seqs.forEach((seq,idx)=>{
+
+    let row=document.createElement("div")
     let html=""
 
     for(let i=0;i<len;i++){
-      let heat=freq[i]?`bg-red-${Math.min(900,100+freq[i]*200)}`:""
-      let mut=(idx!==0 && seq[i]!==seqs[0][i])?"ring-2 ring-red-500":""
 
-      html+=`
+      let base=aaColor(seq[i])
+      let isMut = (idx!==0 && seq[i]!==seqs[0][i])
+
+      let heat = freq[i]/seqs.length
+
+      html += `
       <span onclick="jumpToMask(${i})"
-      class="inline-block w-6 text-center cursor-pointer ${aaColor(seq[i])} ${mut} ${heat}">
-      ${seq[i]}</span>`
+      style="
+        background:${base};
+        box-shadow:${isMut?"0 0 0 2px red":""};
+        background-color: rgba(255,0,0,${heat});
+      "
+      class="inline-block w-6 text-center cursor-pointer">
+      ${seq[i]}
+      </span>`
     }
 
-    let row=document.createElement("div")
     row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
     out.appendChild(row)
   })
@@ -229,38 +270,43 @@ function renderAlignment(names,seqs){
   })
 }
 
-/* MASK */
-let sequence="",manualMask=new Set(),library=[],useSliding=true
-
+/* =========================
+   MASK ENGINE
+========================= */
 const grid=document.getElementById("grid")
 const list=document.getElementById("list")
 
 document.getElementById("toggle").onclick=()=>{
-  useSliding=!useSliding
-  document.getElementById("toggle").classList.toggle("active",useSliding)
+  state.useSliding=!state.useSliding
+  document.getElementById("toggle").classList.toggle("active",state.useSliding)
 }
 
 document.getElementById("seqInput").oninput=e=>{
-  sequence=e.target.value
-  manualMask.clear()
+  state.sequence=e.target.value.replace(/\s/g,"").toUpperCase()
+  state.manualMask.clear()
   renderGrid()
 }
 
 function renderGrid(){
   grid.innerHTML=""
-  sequence.split("").forEach((aa,i)=>{
+
+  state.sequence.split("").forEach((aa,i)=>{
     let box=document.createElement("div")
     box.className="w-10 h-12 border flex flex-col items-center justify-center cursor-pointer"
+
     box.innerHTML=`${aa}<div style="font-size:10px">${i+1}</div>`
 
+    if(state.manualMask.has(i)){
+      box.classList.add("bg-red-400")
+    }
+
     box.onclick=()=>{
-      if(manualMask.has(i)){
-        manualMask.delete(i)
-        box.classList.remove("bg-red-400")
+      if(state.manualMask.has(i)){
+        state.manualMask.delete(i)
       }else{
-        manualMask.add(i)
-        box.classList.add("bg-red-400")
+        state.manualMask.add(i)
       }
+      renderGrid()
     }
 
     grid.appendChild(box)
@@ -268,27 +314,33 @@ function renderGrid(){
 }
 
 document.getElementById("genBtn").onclick=()=>{
+  if(!state.sequence) return
+
   let newSeqs=[]
 
-  if(manualMask.size){
-    let arr=[...sequence]
-    manualMask.forEach(i=>arr[i]="_")
+  if(state.manualMask.size){
+    let arr=[...state.sequence]
+    state.manualMask.forEach(i=>arr[i]="_")
     newSeqs.push(arr.join(""))
   }
 
-  if(useSliding){
-    let w=+document.getElementById("win").value
-    let s=+document.getElementById("step").value
+  if(state.useSliding){
+    let w=Math.max(1,+document.getElementById("win").value)
+    let s=Math.max(1,+document.getElementById("step").value)
 
-    for(let i=0;i<=sequence.length-w;i+=s){
-      let arr=[...sequence]
-      for(let j=0;j<w;j++) arr[i+j]="_"
-      newSeqs.push(arr.join(""))
+    if(w<=state.sequence.length){
+      for(let i=0;i<=state.sequence.length-w;i+=s){
+        let arr=[...state.sequence]
+        for(let j=0;j<w;j++) arr[i+j]="_"
+        newSeqs.push(arr.join(""))
+      }
     }
   }
 
-  newSeqs.forEach(s=>{
-    if(!library.includes(s)) library.push(s)
+  newSeqs.forEach(seq=>{
+    if(!state.library.includes(seq)){
+      state.library.push(seq)
+    }
   })
 
   renderList()
@@ -296,31 +348,39 @@ document.getElementById("genBtn").onclick=()=>{
 
 function renderList(){
   list.innerHTML=""
-  library.forEach(seq=>{
+
+  state.library.forEach(seq=>{
     let row=document.createElement("div")
     row.className="flex justify-between bg-white p-2"
-    row.innerHTML=`<span>${seq}</span><button onclick="removeSeq('${seq}')">✕</button>`
+
+    let del=document.createElement("button")
+    del.innerText="✕"
+    del.onclick=()=>{
+      state.library=state.library.filter(x=>x!==seq)
+      renderList()
+    }
+
+    row.innerHTML=`<span>${seq}</span>`
+    row.appendChild(del)
+
     list.appendChild(row)
   })
 }
 
-function removeSeq(s){
-  library=library.filter(x=>x!==s)
-  renderList()
-}
-
-/* CLICK */
+/* =========================
+   CLICK ALIGN → MASK
+========================= */
 function jumpToMask(pos){
+
   document.querySelector('[data-page="mask"]').click()
 
-  let data=parseFASTA(document.getElementById("alignInput").value)
+  const data=parseFASTA(document.getElementById("alignInput").value)
   if(!data.length) return
 
-  sequence=data[0].seq
-  document.getElementById("seqInput").value=sequence
+  state.sequence=data[0].seq
+  document.getElementById("seqInput").value=state.sequence
 
-  manualMask.clear()
-  manualMask.add(pos)
+  state.manualMask=new Set([pos])
 
   renderGrid()
 }
