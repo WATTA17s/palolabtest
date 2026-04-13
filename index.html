@@ -71,7 +71,7 @@ Align
 
 <div class="flex justify-center gap-3 mb-3">
   <span>Sliding</span>
-  <div id="toggle" class="toggle active"></div>
+  <div id="toggle" class="toggle"></div>
 </div>
 
 <div class="flex justify-center gap-2 mb-3">
@@ -82,7 +82,14 @@ Align
 
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
-<div id="list" class="space-y-2"></div>
+<!-- LIBRARY -->
+<div class="bg-slate-100 p-3 rounded">
+  <div class="flex justify-between mb-2">
+    <span class="text-xs">Library</span>
+    <button id="copyAll" class="text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
+  </div>
+  <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+</div>
 
 </div>
 
@@ -91,19 +98,15 @@ Align
 
 <script>
 
-/* =========================
-   GLOBAL STATE
-========================= */
+/* STATE */
 let state = {
   sequence: "",
   manualMask: new Set(),
   library: [],
-  useSliding: true
+  useSliding: false
 }
 
-/* =========================
-   NAV
-========================= */
+/* NAV */
 document.querySelectorAll("[data-page]").forEach(btn=>{
   btn.onclick=()=>{
     document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
@@ -114,34 +117,25 @@ document.querySelectorAll("[data-page]").forEach(btn=>{
   }
 })
 
-/* =========================
-   FASTA PARSER
-========================= */
+/* FASTA */
 function parseFASTA(text){
   return text.trim().split(">")
   .filter(x=>x)
   .map(b=>{
     const l=b.split("\n")
-    return {
-      name:l[0],
-      seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()
-    }
+    return {name:l[0], seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()}
   })
 }
 
-/* =========================
-   ALIGNMENT ENGINE
-========================= */
+/* ALIGN */
 function score(a,b){
   if(a==="-"||b==="-") return -4
   return a===b ? 2 : -1
 }
 
 function alignPair(s1,s2){
-
   const gap=-4
   const m=s1.length,n=s2.length
-
   let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
 
   for(let i=0;i<=m;i++) dp[i][0]=i*gap
@@ -157,9 +151,7 @@ function alignPair(s1,s2){
     }
   }
 
-  let a1="",a2=""
-  let i=m,j=n
-
+  let a1="",a2="",i=m,j=n
   while(i>0||j>0){
     if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
       a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
@@ -171,20 +163,14 @@ function alignPair(s1,s2){
       a1="-"+a1; a2=s2[j-1]+a2; j--
     }
   }
-
   return [a1,a2]
 }
 
-/* =========================
-   RUN ALIGN
-========================= */
 function runAlign(){
-
   const data=parseFASTA(document.getElementById("alignInput").value)
   if(data.length<2) return
 
   const ref=data[0]
-
   let aligned=[ref.seq]
 
   data.slice(1).forEach(d=>{
@@ -196,9 +182,6 @@ function runAlign(){
   renderAlignment(data.map(d=>d.name),aligned)
 }
 
-/* =========================
-   COLOR
-========================= */
 function aaColor(a){
   if("AVLIMFWY".includes(a)) return "#fde68a"
   if("KRH".includes(a)) return "#93c5fd"
@@ -207,9 +190,6 @@ function aaColor(a){
   return ""
 }
 
-/* =========================
-   RENDER ALIGNMENT
-========================= */
 function renderAlignment(names,seqs){
 
   const out=document.getElementById("alignOutput")
@@ -221,7 +201,6 @@ function renderAlignment(names,seqs){
   const len=seqs[0].length
 
   let freq=Array(len).fill(0)
-
   for(let i=0;i<len;i++){
     for(let j=1;j<seqs.length;j++){
       if(seqs[j][i]!==seqs[0][i]) freq[i]++
@@ -229,34 +208,23 @@ function renderAlignment(names,seqs){
   }
 
   seqs.forEach((seq,idx)=>{
-
-    let row=document.createElement("div")
     let html=""
-
     for(let i=0;i<len;i++){
+      let heat=freq[i]/seqs.length
+      let mut=(idx!==0 && seq[i]!==seqs[0][i])?"outline outline-2 outline-red-500":""
 
-      let base=aaColor(seq[i])
-      let isMut = (idx!==0 && seq[i]!==seqs[0][i])
-
-      let heat = freq[i]/seqs.length
-
-      html += `
+      html+=`
       <span onclick="jumpToMask(${i})"
-      style="
-        background:${base};
-        box-shadow:${isMut?"0 0 0 2px red":""};
-        background-color: rgba(255,0,0,${heat});
-      "
-      class="inline-block w-6 text-center cursor-pointer">
-      ${seq[i]}
-      </span>`
+      style="background:${aaColor(seq[i])}; background-color:rgba(255,0,0,${heat})"
+      class="inline-block w-6 text-center cursor-pointer ${mut}">
+      ${seq[i]}</span>`
     }
 
+    let row=document.createElement("div")
     row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
     out.appendChild(row)
   })
 
-  /* mutation summary */
   seqs.slice(1).forEach((seq,idx)=>{
     let muts=[]
     for(let i=0;i<len;i++){
@@ -270,9 +238,7 @@ function renderAlignment(names,seqs){
   })
 }
 
-/* =========================
-   MASK ENGINE
-========================= */
+/* MASK */
 const grid=document.getElementById("grid")
 const list=document.getElementById("list")
 
@@ -296,16 +262,11 @@ function renderGrid(){
 
     box.innerHTML=`${aa}<div style="font-size:10px">${i+1}</div>`
 
-    if(state.manualMask.has(i)){
-      box.classList.add("bg-red-400")
-    }
+    if(state.manualMask.has(i)) box.classList.add("bg-red-400")
 
     box.onclick=()=>{
-      if(state.manualMask.has(i)){
-        state.manualMask.delete(i)
-      }else{
-        state.manualMask.add(i)
-      }
+      if(state.manualMask.has(i)) state.manualMask.delete(i)
+      else state.manualMask.add(i)
       renderGrid()
     }
 
@@ -325,8 +286,8 @@ document.getElementById("genBtn").onclick=()=>{
   }
 
   if(state.useSliding){
-    let w=Math.max(1,+document.getElementById("win").value)
-    let s=Math.max(1,+document.getElementById("step").value)
+    let w=Math.max(1,+win.value)
+    let s=Math.max(1,+step.value)
 
     if(w<=state.sequence.length){
       for(let i=0;i<=state.sequence.length-w;i+=s){
@@ -337,10 +298,8 @@ document.getElementById("genBtn").onclick=()=>{
     }
   }
 
-  newSeqs.forEach(seq=>{
-    if(!state.library.includes(seq)){
-      state.library.push(seq)
-    }
+  newSeqs.forEach(s=>{
+    if(!state.library.includes(s)) state.library.push(s)
   })
 
   renderList()
@@ -351,27 +310,45 @@ function renderList(){
 
   state.library.forEach(seq=>{
     let row=document.createElement("div")
-    row.className="flex justify-between bg-white p-2"
+    row.className="flex justify-between bg-white p-2 rounded items-center"
+
+    let txt=document.createElement("span")
+    txt.className="font-mono text-xs"
+    txt.innerText=seq
+
+    let actions=document.createElement("div")
+
+    let copy=document.createElement("button")
+    copy.innerText="Copy"
+    copy.className="text-xs bg-slate-200 px-2 rounded"
+    copy.onclick=()=>copyText(copy,seq)
 
     let del=document.createElement("button")
     del.innerText="✕"
+    del.className="text-red-500 text-xs"
     del.onclick=()=>{
       state.library=state.library.filter(x=>x!==seq)
       renderList()
     }
 
-    row.innerHTML=`<span>${seq}</span>`
-    row.appendChild(del)
-
+    actions.append(copy,del)
+    row.append(txt,actions)
     list.appendChild(row)
   })
 }
 
-/* =========================
-   CLICK ALIGN → MASK
-========================= */
-function jumpToMask(pos){
+function copyText(btn,text){
+  navigator.clipboard.writeText(text)
+  btn.innerText="✓"
+  setTimeout(()=>btn.innerText="Copy",700)
+}
 
+document.getElementById("copyAll").onclick=()=>{
+  navigator.clipboard.writeText(state.library.join("\n"))
+}
+
+/* CLICK */
+function jumpToMask(pos){
   document.querySelector('[data-page="mask"]').click()
 
   const data=parseFASTA(document.getElementById("alignInput").value)
@@ -381,7 +358,6 @@ function jumpToMask(pos){
   document.getElementById("seqInput").value=state.sequence
 
   state.manualMask=new Set([pos])
-
   renderGrid()
 }
 
