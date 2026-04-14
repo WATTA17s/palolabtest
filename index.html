@@ -40,28 +40,48 @@ body { font-family: sans-serif; }
 
 <body class="bg-slate-100 p-6">
 
-<div class="max-w-5xl mx-auto">
+<div class="max-w-6xl mx-auto">
 
 <h1 class="text-3xl mb-6 font-semibold">🧬 Pa1oLAB</h1>
 
+<!-- NAV -->
 <div class="flex gap-2 mb-6">
-  <button data-page="mask" class="nav-btn active">Masking</button>
+  <button data-page="align" class="nav-btn active">Alignment</button>
+  <button data-page="mask" class="nav-btn">Masking</button>
 </div>
 
 <div class="bg-white p-6 rounded-xl shadow-sm">
 
-<!-- INPUT -->
+<!-- ALIGN -->
+<div id="align" class="view">
+
+<textarea id="alignInput"
+class="w-full p-3 border rounded font-mono mb-4 text-sm"
+placeholder=">ref
+MKTALVAG
+>mut1
+MKTAIVAG"></textarea>
+
+<button onclick="runAlign()" class="btn bg-indigo-600 text-white px-4 py-2 rounded mb-4">
+Align
+</button>
+
+<div id="alignOutput" class="font-mono text-sm space-y-3"></div>
+
+</div>
+
+<!-- MASK -->
+<div id="mask" class="view hidden">
+
 <input id="seqInput"
 class="w-full p-3 border rounded font-mono text-center mb-4"
-placeholder="Paste protein sequence">
+placeholder="Protein sequence">
 
-<!-- TOGGLE -->
 <div class="flex justify-center gap-3 mb-4">
   <span class="text-sm">Sliding</span>
   <div id="toggle" class="toggle"></div>
 </div>
 
-<!-- CONTROL -->
 <div class="flex justify-center gap-2 mb-4">
   <input id="win" type="number" value="5" class="w-16 border text-center rounded">
   <input id="step" type="number" value="1" class="w-16 border text-center rounded">
@@ -69,21 +89,22 @@ placeholder="Paste protein sequence">
   <button id="clearBtn" class="btn bg-slate-200 px-4 rounded">Clear</button>
 </div>
 
-<!-- GRID -->
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
-<!-- SUMMARY -->
 <div class="text-center text-xs text-slate-500 mb-4" id="summary">
-  No mask selected
+No mask selected
 </div>
 
-<!-- LIBRARY -->
 <div class="bg-slate-100 p-3 rounded">
   <div class="flex justify-between mb-2">
     <span class="text-xs">Library</span>
-    <button id="copyAll" class="btn text-xs bg-indigo-600 text-white px-3 py-1 rounded">Copy All</button>
+    <button id="copyAll" class="btn text-xs bg-indigo-600 text-white px-3 py-1 rounded">
+      Copy All
+    </button>
   </div>
   <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
+</div>
+
 </div>
 
 </div>
@@ -106,49 +127,132 @@ let state = {
   useSliding:false
 }
 
-/* INPUT FILTER */
-seqInput.oninput = e => {
+/* NAV */
+document.querySelectorAll("[data-page]").forEach(btn=>{
+  btn.onclick=()=>{
+    document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
+    btn.classList.add("active")
+    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
+    document.getElementById(btn.dataset.page).classList.remove("hidden")
+  }
+})
 
-  let raw = e.target.value.toUpperCase()
-  let filtered = ""
+/* ALIGN */
+function parseFASTA(text){
+  return text.trim().split(">").filter(x=>x).map(b=>{
+    let l=b.split("\n")
+    return {name:l[0], seq:l.slice(1).join("").toUpperCase()}
+  })
+}
 
-  for(let c of raw){
-    if(AA_SET.has(c)) filtered += c
+function score(a,b){
+  if(a==="-"||b==="-") return -4
+  return a===b?2:-1
+}
+
+function alignPair(s1,s2){
+  let gap=-4
+  let m=s1.length,n=s2.length
+  let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
+
+  for(let i=0;i<=m;i++) dp[i][0]=i*gap
+  for(let j=0;j<=n;j++) dp[0][j]=j*gap
+
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      dp[i][j]=Math.max(
+        dp[i-1][j-1]+score(s1[i-1],s2[j-1]),
+        dp[i-1][j]+gap,
+        dp[i][j-1]+gap
+      )
+    }
   }
 
-  e.target.value = filtered
-  state.sequence = filtered
+  let a1="",a2="",i=m,j=n
+  while(i>0||j>0){
+    if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
+      a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
+    } else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
+      a1=s1[i-1]+a1; a2="-"+a2; i--
+    } else {
+      a1="-"+a1; a2=s2[j-1]+a2; j--
+    }
+  }
+  return [a1,a2]
+}
 
+function runAlign(){
+  const data=parseFASTA(alignInput.value)
+  if(data.length<2) return
+
+  let aligned=[data[0].seq]
+
+  for(let k=1;k<data.length;k++){
+    let seq=data[k].seq
+    const [newRef,newSeq]=alignPair(aligned[0],seq)
+
+    aligned=aligned.map(old=>{
+      let res="",idx=0
+      for(let i=0;i<newRef.length;i++){
+        if(newRef[i]==="-") res+="-"
+        else res+=old[idx++]||"-"
+      }
+      return res
+    })
+
+    aligned[0]=newRef
+    aligned.push(newSeq)
+  }
+
+  renderAlignment(data.map(d=>d.name),aligned)
+}
+
+function renderAlignment(names,seqs){
+  alignOutput.innerHTML=""
+
+  seqs.forEach((seq,idx)=>{
+    let row=document.createElement("div")
+
+    let html=""
+    for(let i=0;i<seq.length;i++){
+      html+=`<span class="inline-block w-6 text-center">${seq[i]}</span>`
+    }
+
+    row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
+    alignOutput.appendChild(row)
+  })
+}
+
+/* INPUT FILTER */
+seqInput.oninput=e=>{
+  let raw=e.target.value.toUpperCase()
+  let filtered=""
+  for(let c of raw){ if(AA_SET.has(c)) filtered+=c }
+  e.target.value=filtered
+  state.sequence=filtered
   state.manualMask.clear()
   renderGrid()
 }
 
 /* TOGGLE */
-toggle.onclick = ()=>{
-  state.useSliding = !state.useSliding
-  toggle.classList.toggle("active", state.useSliding)
+toggle.onclick=()=>{
+  state.useSliding=!state.useSliding
+  toggle.classList.toggle("active")
 }
 
 /* GRID */
 function renderGrid(){
-
   grid.innerHTML=""
-
   state.sequence.split("").forEach((aa,i)=>{
-
-    let box = document.createElement("div")
+    let box=document.createElement("div")
     box.className="w-10 h-12 border rounded flex flex-col items-center justify-center cursor-pointer"
 
     box.innerHTML=`${aa}<div style="font-size:10px">${i+1}</div>`
 
-    if(state.manualMask.has(i)){
-      box.classList.add("bg-red-500","text-white")
-    }
+    if(state.manualMask.has(i)) box.classList.add("bg-red-500","text-white")
 
     box.onclick=()=>{
-      if(state.manualMask.has(i)) state.manualMask.delete(i)
-      else state.manualMask.add(i)
-
+      state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
       renderGrid()
       updateSummary()
     }
@@ -157,26 +261,21 @@ function renderGrid(){
   })
 }
 
-/* SUMMARY */
 function updateSummary(){
-  if(state.manualMask.size === 0){
-    summary.innerText = "No mask selected"
-  } else {
-    let arr = [...state.manualMask].map(i=>i+1)
-    summary.innerText = "Masked positions: " + arr.join(", ")
-  }
+  summary.innerText = state.manualMask.size
+    ? "Masked: "+[...state.manualMask].map(i=>i+1).join(", ")
+    : "No mask selected"
 }
 
 /* CLEAR */
-clearBtn.onclick = ()=>{
+clearBtn.onclick=()=>{
   state.manualMask.clear()
   renderGrid()
   updateSummary()
 }
 
 /* GENERATE */
-genBtn.onclick = ()=>{
-
+genBtn.onclick=()=>{
   if(!state.sequence) return
 
   let newSeqs=[]
@@ -188,9 +287,7 @@ genBtn.onclick = ()=>{
   }
 
   if(state.useSliding){
-    let w=Math.max(1,+win.value)
-    let s=Math.max(1,+step.value)
-
+    let w=+win.value, s=+step.value
     for(let i=0;i<=state.sequence.length-w;i+=s){
       let arr=[...state.sequence]
       for(let j=0;j<w;j++) arr[i+j]="_"
@@ -208,7 +305,7 @@ genBtn.onclick = ()=>{
 /* COPY */
 function copy(btn,text){
   navigator.clipboard.writeText(text)
-  let t = btn.innerText
+  let t=btn.innerText
   btn.innerText="✓"
   btn.classList.add("copy-success")
   setTimeout(()=>{
@@ -217,13 +314,10 @@ function copy(btn,text){
   },800)
 }
 
-/* LIST */
 function renderList(){
-
   list.innerHTML=""
 
   state.library.forEach(seq=>{
-
     let row=document.createElement("div")
     row.className="flex justify-between bg-white p-2 rounded items-center"
 
@@ -232,6 +326,7 @@ function renderList(){
     txt.innerText=seq
 
     let actions=document.createElement("div")
+    actions.className="flex gap-3"  /* ✅ spacing fix */
 
     let copyBtn=document.createElement("button")
     copyBtn.innerText="Copy"
@@ -247,14 +342,13 @@ function renderList(){
 
     actions.append(copyBtn,del)
     row.append(txt,actions)
-
     list.appendChild(row)
   })
 }
 
-/* COPY ALL */
-copyAll.onclick = ()=>{
-  navigator.clipboard.writeText(state.library.join("\n"))
+/* COPY ALL FIX */
+copyAll.onclick=(e)=>{
+  copy(e.target, state.library.join("\n"))
 }
 
 </script>
