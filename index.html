@@ -8,7 +8,6 @@
 <style>
 body { font-family: sans-serif; }
 
-/* nav */
 .nav-btn {
   padding:8px 14px;
   border-radius:10px;
@@ -19,7 +18,6 @@ body { font-family: sans-serif; }
 .nav-btn:hover { background:#f1f5f9; }
 .nav-btn.active { background:#4f46e5; color:white; }
 
-/* toggle */
 .toggle {
   width:40px;height:20px;background:#e2e8f0;border-radius:999px;cursor:pointer;position:relative;
 }
@@ -30,90 +28,62 @@ body { font-family: sans-serif; }
 .toggle.active { background:#4f46e5; }
 .toggle.active::after { transform:translateX(20px); }
 
-/* button style */
 .btn {
   transition: all 0.15s ease;
 }
-.btn:hover {
-  transform: translateY(-1px);
-  opacity:0.9;
-}
-.btn:active {
-  transform: scale(0.97);
-}
+.btn:hover { transform: translateY(-1px); }
+.btn:active { transform: scale(0.97); }
 
-/* copy feedback */
-.copy-success {
-  color:#22c55e;
-}
+.copy-success { color:#22c55e; }
 </style>
 </head>
 
 <body class="bg-slate-100 p-6">
 
-<div class="max-w-6xl mx-auto">
+<div class="max-w-5xl mx-auto">
 
 <h1 class="text-3xl mb-6 font-semibold">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-6">
-  <button data-page="align" class="nav-btn active">Alignment</button>
-  <button data-page="mask" class="nav-btn">Masking</button>
+  <button data-page="mask" class="nav-btn active">Masking</button>
 </div>
 
 <div class="bg-white p-6 rounded-xl shadow-sm">
 
-<!-- ALIGN -->
-<div id="align" class="view">
-
-<textarea id="alignInput"
-class="w-full p-3 border rounded font-mono mb-4 text-sm"
-placeholder=">ref
-MKTALVAG
->mut1
-MKTAIVAG"></textarea>
-
-<button onclick="runAlign()" class="btn bg-indigo-600 text-white px-4 py-2 rounded mb-4">
-Align
-</button>
-
-<div id="alignOutput" class="font-mono text-sm space-y-3"></div>
-
-<div class="mt-4">
-  <h3 class="text-sm font-semibold mb-1">Mutation Summary</h3>
-  <div id="mutationBox" class="text-xs font-mono"></div>
-</div>
-
-</div>
-
-<!-- MASK -->
-<div id="mask" class="view hidden">
-
-<div id="currentSeqLabel" class="text-sm text-center mb-2 text-slate-500"></div>
-
+<!-- INPUT -->
 <input id="seqInput"
-class="w-full p-2 border rounded font-mono text-center mb-3">
+class="w-full p-3 border rounded font-mono text-center mb-4"
+placeholder="Paste protein sequence">
 
-<div class="flex justify-center gap-3 mb-3">
+<!-- TOGGLE -->
+<div class="flex justify-center gap-3 mb-4">
   <span class="text-sm">Sliding</span>
   <div id="toggle" class="toggle"></div>
 </div>
 
+<!-- CONTROL -->
 <div class="flex justify-center gap-2 mb-4">
   <input id="win" type="number" value="5" class="w-16 border text-center rounded">
   <input id="step" type="number" value="1" class="w-16 border text-center rounded">
-  <button id="genBtn" class="btn bg-indigo-600 text-white px-3 rounded">Generate</button>
+  <button id="genBtn" class="btn bg-indigo-600 text-white px-4 rounded">Generate</button>
+  <button id="clearBtn" class="btn bg-slate-200 px-4 rounded">Clear</button>
 </div>
 
+<!-- GRID -->
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
+<!-- SUMMARY -->
+<div class="text-center text-xs text-slate-500 mb-4" id="summary">
+  No mask selected
+</div>
+
+<!-- LIBRARY -->
 <div class="bg-slate-100 p-3 rounded">
   <div class="flex justify-between mb-2">
     <span class="text-xs">Library</span>
-    <button id="copyAll" class="btn text-xs bg-indigo-600 text-white px-2 rounded">Copy All</button>
+    <button id="copyAll" class="btn text-xs bg-indigo-600 text-white px-3 py-1 rounded">Copy All</button>
   </div>
   <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
-</div>
-
 </div>
 
 </div>
@@ -121,188 +91,92 @@ class="w-full p-2 border rounded font-mono text-center mb-3">
 
 <script>
 
+/* VALID AA */
+const AA_SET = new Set([
+"A","R","N","D","C","Q","E","G",
+"H","I","L","K","M","F","P","S",
+"T","W","Y","V"
+])
+
 /* STATE */
 let state = {
   sequence:"",
-  sequenceName:"",
   manualMask:new Set(),
   library:[],
   useSliding:false
 }
 
-/* NAV */
-document.querySelectorAll("[data-page]").forEach(btn=>{
-  btn.onclick=()=>{
-    document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
-    btn.classList.add("active")
-    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
-    document.getElementById(btn.dataset.page).classList.remove("hidden")
-  }
-})
+/* INPUT FILTER */
+seqInput.oninput = e => {
 
-/* FASTA */
-function parseFASTA(text){
-  return text.trim().split(">")
-  .filter(x=>x)
-  .map(b=>{
-    let l=b.split("\n")
-    return {name:l[0], seq:l.slice(1).join("").replace(/\s/g,"").toUpperCase()}
-  })
-}
+  let raw = e.target.value.toUpperCase()
+  let filtered = ""
 
-/* ALIGN */
-function score(a,b){
-  if(a==="-"||b==="-") return -4
-  return a===b?2:-1
-}
-
-function alignPair(s1,s2){
-  let gap=-4
-  let m=s1.length,n=s2.length
-  let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
-
-  for(let i=0;i<=m;i++) dp[i][0]=i*gap
-  for(let j=0;j<=n;j++) dp[0][j]=j*gap
-
-  for(let i=1;i<=m;i++){
-    for(let j=1;j<=n;j++){
-      dp[i][j]=Math.max(
-        dp[i-1][j-1]+score(s1[i-1],s2[j-1]),
-        dp[i-1][j]+gap,
-        dp[i][j-1]+gap
-      )
-    }
+  for(let c of raw){
+    if(AA_SET.has(c)) filtered += c
   }
 
-  let a1="",a2="",i=m,j=n
+  e.target.value = filtered
+  state.sequence = filtered
 
-  while(i>0||j>0){
-    if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
-      a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
-    }
-    else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
-      a1=s1[i-1]+a1; a2="-"+a2; i--
-    }
-    else{
-      a1="-"+a1; a2=s2[j-1]+a2; j--
-    }
-  }
-
-  return [a1,a2]
-}
-
-/* MSA */
-function runAlign(){
-  const data=parseFASTA(document.getElementById("alignInput").value)
-  if(data.length<2) return
-
-  let aligned=[data[0].seq]
-
-  for(let k=1;k<data.length;k++){
-    let seq=data[k].seq
-    const [newRef,newSeq]=alignPair(aligned[0],seq)
-
-    aligned=aligned.map(old=>{
-      let res="",idx=0
-      for(let i=0;i<newRef.length;i++){
-        if(newRef[i]==="-") res+="-"
-        else res+=old[idx++]||"-"
-      }
-      return res
-    })
-
-    aligned[0]=newRef
-    aligned.push(newSeq)
-  }
-
-  renderAlignment(data.map(d=>d.name),aligned)
-}
-
-/* RENDER */
-function renderAlignment(names,seqs){
-
-  const out=document.getElementById("alignOutput")
-  const mutBox=document.getElementById("mutationBox")
-
-  out.innerHTML=""
-  mutBox.innerHTML=""
-
-  let len=seqs[0].length
-
-  let freq=Array(len).fill(0)
-  for(let i=0;i<len;i++){
-    for(let j=1;j<seqs.length;j++){
-      if(seqs[j][i]!==seqs[0][i]) freq[i]++
-    }
-  }
-
-  seqs.forEach((seq,idx)=>{
-    let html=""
-    for(let i=0;i<len;i++){
-      let heat=freq[i]/seqs.length
-
-      html+=`
-      <span onclick="jumpToMask(${idx}, ${i})"
-      style="background:rgba(255,0,0,${heat})"
-      class="inline-block w-6 text-center cursor-pointer">
-      ${seq[i]}</span>`
-    }
-
-    let row=document.createElement("div")
-    row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
-    out.appendChild(row)
-  })
-}
-
-/* MASK */
-const grid=document.getElementById("grid")
-const list=document.getElementById("list")
-
-document.getElementById("toggle").onclick=()=>{
-  state.useSliding=!state.useSliding
-  document.getElementById("toggle").classList.toggle("active",state.useSliding)
-}
-
-document.getElementById("seqInput").oninput=e=>{
-  state.sequence=e.target.value.replace(/\s/g,"").toUpperCase()
   state.manualMask.clear()
   renderGrid()
 }
 
+/* TOGGLE */
+toggle.onclick = ()=>{
+  state.useSliding = !state.useSliding
+  toggle.classList.toggle("active", state.useSliding)
+}
+
+/* GRID */
 function renderGrid(){
+
   grid.innerHTML=""
+
   state.sequence.split("").forEach((aa,i)=>{
-    let box=document.createElement("div")
+
+    let box = document.createElement("div")
     box.className="w-10 h-12 border rounded flex flex-col items-center justify-center cursor-pointer"
 
     box.innerHTML=`${aa}<div style="font-size:10px">${i+1}</div>`
 
-    if(state.manualMask.has(i)) box.classList.add("bg-red-400","text-white")
+    if(state.manualMask.has(i)){
+      box.classList.add("bg-red-500","text-white")
+    }
 
     box.onclick=()=>{
-      state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
+      if(state.manualMask.has(i)) state.manualMask.delete(i)
+      else state.manualMask.add(i)
+
       renderGrid()
+      updateSummary()
     }
 
     grid.appendChild(box)
   })
 }
 
-/* COPY (minimal) */
-function copyWithFeedback(btn,text){
-  navigator.clipboard.writeText(text)
-  const original=btn.innerText
-
-  btn.innerText="✓"
-  btn.classList.add("copy-success")
-
-  setTimeout(()=>{
-    btn.innerText=original
-    btn.classList.remove("copy-success")
-  },800)
+/* SUMMARY */
+function updateSummary(){
+  if(state.manualMask.size === 0){
+    summary.innerText = "No mask selected"
+  } else {
+    let arr = [...state.manualMask].map(i=>i+1)
+    summary.innerText = "Masked positions: " + arr.join(", ")
+  }
 }
 
-document.getElementById("genBtn").onclick=()=>{
+/* CLEAR */
+clearBtn.onclick = ()=>{
+  state.manualMask.clear()
+  renderGrid()
+  updateSummary()
+}
+
+/* GENERATE */
+genBtn.onclick = ()=>{
+
   if(!state.sequence) return
 
   let newSeqs=[]
@@ -331,10 +205,25 @@ document.getElementById("genBtn").onclick=()=>{
   renderList()
 }
 
+/* COPY */
+function copy(btn,text){
+  navigator.clipboard.writeText(text)
+  let t = btn.innerText
+  btn.innerText="✓"
+  btn.classList.add("copy-success")
+  setTimeout(()=>{
+    btn.innerText=t
+    btn.classList.remove("copy-success")
+  },800)
+}
+
+/* LIST */
 function renderList(){
+
   list.innerHTML=""
 
   state.library.forEach(seq=>{
+
     let row=document.createElement("div")
     row.className="flex justify-between bg-white p-2 rounded items-center"
 
@@ -344,10 +233,10 @@ function renderList(){
 
     let actions=document.createElement("div")
 
-    let copy=document.createElement("button")
-    copy.innerText="Copy"
-    copy.className="btn text-xs bg-slate-200 px-2 rounded"
-    copy.onclick=()=>copyWithFeedback(copy,seq)
+    let copyBtn=document.createElement("button")
+    copyBtn.innerText="Copy"
+    copyBtn.className="btn text-xs bg-slate-100 px-2 rounded"
+    copyBtn.onclick=()=>copy(copyBtn,seq)
 
     let del=document.createElement("button")
     del.innerText="✕"
@@ -356,31 +245,16 @@ function renderList(){
       renderList()
     }
 
-    actions.append(copy,del)
+    actions.append(copyBtn,del)
     row.append(txt,actions)
+
     list.appendChild(row)
   })
 }
 
-document.getElementById("copyAll").onclick=(e)=>{
-  copyWithFeedback(e.target, state.library.join("\n"))
-}
-
-/* CLICK */
-function jumpToMask(seqIndex,pos){
-  document.querySelector('[data-page="mask"]').click()
-
-  const data=parseFASTA(document.getElementById("alignInput").value)
-  if(!data.length) return
-
-  const selected=data[seqIndex]
-
-  state.sequence=selected.seq
-  document.getElementById("seqInput").value=selected.seq
-  document.getElementById("currentSeqLabel").innerText="Editing: "+selected.name
-
-  state.manualMask=new Set([pos])
-  renderGrid()
+/* COPY ALL */
+copyAll.onclick = ()=>{
+  navigator.clipboard.writeText(state.library.join("\n"))
 }
 
 </script>
