@@ -240,12 +240,12 @@ let rank = sorted.indexOf(c)
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
-// 🟢 best codon
+// 🟢 best
 if(rank === 0){
   d.classList.add("bg-green-200")
 }
 
-// 🔴 rare จริง
+// 🔴 rare
 if(rank === sorted.length-1 && current < 0.15){
   d.classList.add("bg-red-200")
 }
@@ -262,12 +262,6 @@ d.innerHTML=`
 <div class="text-[10px] opacity-70">${current.toFixed(2)}</div>
 `
 
-let d=document.createElement("div")
-d.className="box border cursor-pointer"
-
-if(mut.some(m=>m.pos===i)) d.classList.add("bg-yellow-200")
-
-d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
 d.onclick=e=>{e.stopPropagation();openDD(e,i,d)}
 
 viewer.appendChild(d)
