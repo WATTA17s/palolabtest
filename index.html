@@ -47,6 +47,19 @@ body{font-family:sans-serif}
 
 <div class="flex flex-wrap gap-2 mb-3" id="orgButtons"></div>
 
+<!-- 🔥 NAME FORMAT -->
+<div class="mb-3">
+<div class="flex gap-2 mb-1">
+<button onclick="formatText('bold')" class="px-2 border rounded font-bold">B</button>
+<button onclick="formatText('italic')" class="px-2 border rounded italic">I</button>
+</div>
+
+<div id="seqName" contenteditable="true"
+class="border px-3 py-2 rounded w-64 bg-white">
+MySequence
+</div>
+</div>
+
 <textarea id="dnaInput" class="w-full p-3 border rounded mb-3" placeholder="DNA sequence"></textarea>
 
 <div id="viewer" class="flex flex-wrap gap-2"></div>
@@ -58,15 +71,19 @@ body{font-family:sans-serif}
 
 <div id="outputDNA" class="w-full border p-3 mt-3 font-mono bg-white break-all rounded"></div>
 
-<!-- EXPORT -->
+<!-- EXPORT + BACKUP -->
 <div class="mt-4 flex gap-2 items-center">
-<input id="seqName" placeholder="Sequence name"
-class="border px-3 py-2 rounded w-64">
 
 <button onclick="exportWord()"
 class="bg-blue-600 text-white px-4 py-2 rounded">
 Export Word
 </button>
+
+<button onclick="backupData()"
+class="bg-purple-600 text-white px-4 py-2 rounded">
+Backup
+</button>
+
 </div>
 
 </div>
@@ -86,7 +103,7 @@ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
 el.classList.add("active")
 }
 
-/* MASK */
+/* ================= MASK ================= */
 let maskSeq="",maskSet=new Set(),library=[]
 
 document.getElementById("maskInput").oninput=e=>{
@@ -126,7 +143,6 @@ let s=+document.getElementById("step").value
 for(let i=0;i<=maskSeq.length-w;i+=s){
 let arr=[...maskSeq]
 for(let j=0;j<w;j++) arr[i+j]="_"
-
 library.push(arr.join(""))
 }
 
@@ -135,7 +151,12 @@ document.getElementById("maskLib").innerHTML=library.join("<br>")
 
 function copyMask(){navigator.clipboard.writeText(library.join("\n"))}
 
-/* AA */
+/* ================= FORMAT ================= */
+function formatText(cmd){
+document.execCommand(cmd, false, null)
+}
+
+/* ================= AA ================= */
 const AA_INFO={
 A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
 R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
@@ -162,7 +183,7 @@ V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
 const CODON_TO_AA={}
 Object.entries(AA_INFO).forEach(([aa,o])=>o.codons.forEach(c=>CODON_TO_AA[c]=aa))
 
-/* ORGANISM */
+/* ================= ORGANISM ================= */
 const organisms=["ecoli","pichia","coryne","bacillus"]
 let org="ecoli"
 
@@ -186,7 +207,7 @@ pichia:{TTT:0.54,TTC:0.46,TTA:0.16,TTG:0.33,CTT:0.16,CTC:0.08,CTA:0.11,CTG:0.16,
 coryne:{TTT:0.37,TTC:0.63,TTA:0.05,TTG:0.20,CTT:0.17,CTC:0.23,CTA:0.06,CTG:0.29,ATT:0.38,ATC:0.59,ATA:0.03,ATG:1.00,GTT:0.29,GTC:0.33,GTA:0.11,GTG:0.27,TCT:0.19,TCC:0.23,TCA:0.13,TCG:0.08,AGT:0.18,AGC:0.19,CCT:0.21,CCC:0.30,CCA:0.27,CCG:0.22,ACT:0.24,ACC:0.40,ACA:0.23,ACG:0.13,GCT:0.25,GCC:0.40,GCA:0.22,GCG:0.13,TAT:0.43,TAC:0.57,CAT:0.44,CAC:0.56,CAA:0.27,CAG:0.73,AAT:0.36,AAC:0.64,AAA:0.32,AAG:0.68,GAT:0.46,GAC:0.54,GAA:0.37,GAG:0.63,TGT:0.42,TGC:0.58,TGG:1.00,CGT:0.09,CGC:0.36,CGA:0.11,CGG:0.44,AGA:0.00,AGG:0.00,GGT:0.28,GGC:0.42,GGA:0.16,GGG:0.14,TAA:0.64,TAG:0.10,TGA:0.26},
 bacillus:{TTT:0.60,TTC:0.40,TTA:0.12,TTG:0.12,CTT:0.24,CTC:0.18,CTA:0.06,CTG:0.29,ATT:0.67,ATC:0.33,ATA:0.00,ATG:1.00,GTT:0.36,GTC:0.24,GTA:0.20,GTG:0.20,TCT:0.21,TCC:0.20,TCA:0.14,TCG:0.05,AGT:0.22,AGC:0.18,CCT:0.29,CCC:0.14,CCA:0.43,CCG:0.14,ACT:0.31,ACC:0.27,ACA:0.28,ACG:0.14,GCT:0.36,GCC:0.22,GCA:0.28,GCG:0.14,TAT:0.58,TAC:0.42,CAT:0.58,CAC:0.42,CAA:0.66,CAG:0.34,AAT:0.55,AAC:0.45,AAA:0.74,AAG:0.26,GAT:0.63,GAC:0.37,GAA:0.71,GAG:0.29,TGT:0.61,TGC:0.39,TGG:1.00,CGT:0.36,CGC:0.18,CGA:0.11,CGG:0.11,AGA:0.18,AGG:0.06,GGT:0.34,GGC:0.21,GGA:0.25,GGG:0.20,TAA:0.62,TAG:0.09,TGA:0.29}
 }
-/* CORE */
+/* ================= CORE ================= */
 let codons=[],orig=[],mut=[]
 
 document.getElementById("dnaInput").oninput=e=>{
@@ -203,7 +224,6 @@ render()
 }
 
 function render(){
-
 let viewer=document.getElementById("viewer")
 viewer.innerHTML=""
 
@@ -221,24 +241,19 @@ d.onclick=e=>{e.stopPropagation();openDD(e,i,d)}
 viewer.appendChild(d)
 })
 
-/* mutation pill */
+/* summary */
 let summaryHTML=""
 mut.forEach(m=>{
-summaryHTML+=`<div class="px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-full text-sm font-semibold">
-${m.from}${m.pos+1}${m.to}
-</div>`
+summaryHTML+=`<div class="px-3 py-1 bg-yellow-100 border rounded-full">${m.from}${m.pos+1}${m.to}</div>`
 })
 document.getElementById("mutSummary").innerHTML=summaryHTML
 
-/* DNA highlight */
+/* DNA */
 let dnaHTML=""
 codons.forEach((c,i)=>{
-let isMut=mut.some(m=>m.pos===i)
-if(isMut){
-dnaHTML+=`<span class="px-1 border border-yellow-500 bg-yellow-200 rounded">${c}</span>`
-}else{
-dnaHTML+=c
-}
+dnaHTML+=mut.some(m=>m.pos===i)
+? `<span class="px-1 border bg-yellow-200">${c}</span>`
+: c
 })
 document.getElementById("outputDNA").innerHTML=dnaHTML
 }
@@ -278,29 +293,19 @@ codons[i]=c
 render()
 }
 
-/* WORD EXPORT */
+/* ================= EXPORT ================= */
 function exportWord(){
-
-let name=document.getElementById("seqName").value.trim() || "MySequence"
+let nameHTML=document.getElementById("seqName").innerHTML
 let sequence=codons.join("")
-
-let mutText = mut.length===0
-? "None"
-: mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+let mutText = mut.length===0 ? "None" : mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
 
 let content=`
-<html>
-<body style="font-family:Courier New; font-size:12pt">
-
-<p><b>>${name}</b></p>
-
+<html><body style="font-family:Courier New; font-size:12pt">
+<p>>${nameHTML}</p>
 <p>${sequence}</p>
-
 <p><b>Mutations:</b></p>
 <p>${mutText}</p>
-
-</body>
-</html>
+</body></html>
 `
 
 let blob=new Blob(['\ufeff',content],{type:'application/msword'})
@@ -308,10 +313,24 @@ let url=URL.createObjectURL(blob)
 
 let a=document.createElement("a")
 a.href=url
-a.download=`${name}.doc`
+a.download="sequence.doc"
 a.click()
 
 URL.revokeObjectURL(url)
+}
+
+/* ================= BACKUP ================= */
+async function backupData(){
+let name=document.getElementById("seqName").innerText
+let sequence=codons.join("")
+let mutations = mut.length===0 ? "None" : mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+
+await fetch("https://script.google.com/macros/s/AKfycbyLe0WCFL9Y7PsCDJ28boPxfjcWSkSMr80J7Rt3IswENxz8t_7w_kg6ieTz0eBGAlVu/exec",{
+method:"POST",
+body:JSON.stringify({name,sequence,mutations})
+})
+
+alert("Backup saved to Google Sheet ✅")
 }
 
 document.addEventListener("click",()=>{
