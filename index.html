@@ -286,28 +286,57 @@ document.getElementById("outputDNA").innerHTML=dnaHTML
 
 /* dropdown */
 function openDD(e,i,box){
+
 let dropdown=document.getElementById("dropdown")
 dropdown.innerHTML=""
 dropdown.classList.remove("hidden")
 
-Object.entries(AA_INFO).forEach(([aa,o])=>{
-let g=document.createElement("div")
-g.innerHTML=`<div class="font-semibold text-xs">${o.name} (${aa})</div>`
+let usage = CODON_USAGE[org] || {}
 
-o.codons.forEach(c=>{
+Object.entries(AA_INFO).forEach(([aa,o])=>{
+
+let g=document.createElement("div")
+g.innerHTML=`<div class="font-semibold text-xs mt-1">${o.name} (${aa})</div>`
+
+// sort codon by usage
+let sorted = [...o.codons].sort((a,b)=>(usage[b]||0)-(usage[a]||0))
+
+sorted.forEach((c,idx)=>{
+let val = usage[c] || 0
+
 let row=document.createElement("div")
-row.className="cursor-pointer hover:bg-gray-100 px-2"
-row.innerHTML=c
-row.onclick=()=>{apply(i,c);dropdown.classList.add("hidden")}
+row.className="flex justify-between cursor-pointer px-2 rounded"
+
+// 🟢 best
+if(idx === 0){
+  row.classList.add("bg-green-100")
+}
+
+// 🔴 rare
+if(idx === sorted.length-1 && val < 0.15){
+  row.classList.add("bg-red-100")
+}
+
+row.innerHTML=`
+<span>${c}</span>
+<span class="text-xs opacity-70">${val.toFixed(2)}</span>
+`
+
+row.onclick=()=>{
+apply(i,c)
+dropdown.classList.add("hidden")
+}
+
 g.appendChild(row)
 })
 
 dropdown.appendChild(g)
 })
 
+// 📍 position fix (ไม่ลอยบน)
 let r=box.getBoundingClientRect()
-dropdown.style.left=r.right+10+"px"
-dropdown.style.top=r.top+"px"
+dropdown.style.left = r.right + 10 + "px"
+dropdown.style.top = Math.min(r.top, window.innerHeight - 250) + "px"
 }
 
 function apply(i,c){
