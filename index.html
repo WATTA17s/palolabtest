@@ -270,9 +270,13 @@ viewer.appendChild(d)
 })
 
 /* summary */
-let summaryHTML=""
-mut.forEach(m=>{
-summaryHTML+=`<div class="px-3 py-1 bg-yellow-100 border rounded-full">${m.from}${m.pos+1}${m.to}</div>`
+let summaryHTML+=`
+<div class="px-3 py-1 bg-yellow-100 border rounded-full text-sm">
+${m.fromAA}${m.pos+1}${m.toAA}
+<span class="text-xs opacity-70 ml-1">
+(${m.fromCodon}→${m.toCodon})
+</span>
+</div>`
 })
 document.getElementById("mutSummary").innerHTML=summaryHTML
 
