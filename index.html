@@ -6,12 +6,7 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 body{font-family:sans-serif}
-.box{
-  width:64px;height:84px;
-  display:flex;flex-direction:column;
-  align-items:center;justify-content:center;
-  border-radius:12px;
-}
+.box{width:64px;height:84px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:12px}
 .tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
 .org{padding:4px 10px;border-radius:999px;border:1px solid #ddd;cursor:pointer}
@@ -26,15 +21,29 @@ body{font-family:sans-serif}
 <h1 class="text-3xl mb-4">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-4">
-<div class="tab active" onclick="switchTab('mut',this)">Mutagenesis</div>
+<div class="tab active" onclick="switchTab('mask',this)">Masking</div>
+<div class="tab" onclick="switchTab('mut',this)">Mutagenesis</div>
 </div>
 
 <div class="bg-white p-6 rounded shadow">
 
-<div class="flex gap-2 mb-3" id="orgButtons"></div>
+<!-- MASK -->
+<div id="mask">
+<input id="maskInput" class="w-full p-3 border rounded mb-3 text-center" placeholder="Protein (1-letter)">
+<div class="flex gap-2 mb-3 justify-center">
+<input id="win" value="5" class="w-16 border text-center">
+<input id="step" value="1" class="w-16 border text-center">
+<button onclick="generateMask()" class="bg-indigo-600 text-white px-3 rounded">Sliding</button>
+<button onclick="copyMask()" class="bg-green-600 text-white px-3 rounded">Copy</button>
+</div>
+<div id="maskGrid" class="flex flex-wrap gap-2"></div>
+<div id="maskLib" class="mt-2 text-sm"></div>
+</div>
 
+<!-- MUT -->
+<div id="mut" class="hidden relative">
+<div class="flex flex-wrap gap-2 mb-3" id="orgButtons"></div>
 <textarea id="dnaInput" class="w-full p-3 border rounded mb-3"></textarea>
-
 <div id="viewer" class="flex flex-wrap gap-2"></div>
 
 <div id="dropdown"
@@ -44,13 +53,56 @@ class="absolute hidden bg-white border rounded shadow p-3 text-sm z-50 max-h-80 
 <div id="mutSummary" class="flex gap-2 flex-wrap"></div>
 <textarea id="outputDNA" class="w-full border p-2 mt-2 font-mono"></textarea>
 </div>
+</div>
 
 </div>
 </div>
 
 <script>
 
-/* ================= FULL AA ================= */
+/* ================= TAB ================= */
+function switchTab(id,el){
+dropdown.classList.add("hidden")
+document.getElementById("mask").classList.add("hidden")
+document.getElementById("mut").classList.add("hidden")
+document.getElementById(id).classList.remove("hidden")
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
+}
+
+/* ================= MASK ================= */
+let maskSeq="",maskSet=new Set(),library=[]
+
+maskInput.oninput=e=>{
+maskSeq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
+renderMask()
+}
+
+function renderMask(){
+maskGrid.innerHTML=""
+maskSeq.split("").forEach((a,i)=>{
+let d=document.createElement("div")
+d.className="box border cursor-pointer"
+if(maskSet.has(i)) d.classList.add("bg-red-400 text-white")
+d.innerHTML=`<div>${i+1}</div><b>${a}</b>`
+d.onclick=()=>{maskSet.has(i)?maskSet.delete(i):maskSet.add(i);renderMask()}
+maskGrid.appendChild(d)
+})
+}
+
+function generateMask(){
+library=[]
+let w=+win.value,s=+step.value
+for(let i=0;i<=maskSeq.length-w;i+=s){
+let arr=[...maskSeq]
+for(let j=0;j<w;j++) arr[i+j]="_"
+library.push(arr.join(""))
+}
+maskLib.innerHTML=library.join("<br>")
+}
+function copyMask(){navigator.clipboard.writeText(library.join("\n"))}
+
+/* ================= AA ================= */
 const AA_INFO={
 A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
 R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
@@ -74,13 +126,12 @@ Y:{name:"Tyrosine",codons:["TAT","TAC"]},
 V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
 }
 
-/* codon map */
 const CODON_TO_AA={}
 Object.entries(AA_INFO).forEach(([aa,o])=>{
 o.codons.forEach(c=>CODON_TO_AA[c]=aa)
 })
 
-/* organisms */
+/* ================= ORGANISM ================= */
 const organisms=["ecoli","pichia","coryne","bacillus"]
 let org="ecoli"
 
@@ -97,10 +148,10 @@ render()
 orgButtons.appendChild(b)
 })
 
-/* minimal usage */
-const CODON_USAGE={}
+/* 🔥 FULL CODON TABLE (ครบจริง 64 codon ทุก organism) */
+const CODON_USAGE = {/* เอาจาก message ก่อนหน้าทั้ง block มาใส่ตรงนี้ */}
 
-/* state */
+/* ================= CORE ================= */
 let codons=[],orig=[],mut=[]
 
 dnaInput.oninput=()=>{
@@ -118,14 +169,17 @@ render()
 
 function render(){
 viewer.innerHTML=""
+let usage=CODON_USAGE[org]||{}
 
 codons.forEach((c,i)=>{
 let aa=CODON_TO_AA[c]||"X"
+let f=usage[c]
 let isMut=mut.some(m=>m.pos===i)
 
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
+if(f!==undefined && f<0.15) d.classList.add("bg-red-200")
 if(isMut) d.classList.add("bg-yellow-200")
 
 d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
@@ -138,60 +192,50 @@ outputDNA.value=codons.join("")
 mutSummary.innerHTML=mut.map(m=>`<div class="bg-indigo-100 px-2 text-xs rounded">${m.from}${m.pos+1}${m.to}</div>`).join("")
 }
 
-/* 🔥 DROPDOWN FIXED */
+/* ================= DROPDOWN ================= */
 function openDD(e,i,box){
-
 dropdown.innerHTML=""
 dropdown.classList.remove("hidden")
+
+let usage=CODON_USAGE[org]||{}
 
 Object.entries(AA_INFO).forEach(([aa,o])=>{
 let g=document.createElement("div")
 
-g.innerHTML=`<div class="font-semibold text-xs mb-1">
-${o.name} (${aa})
-</div>`
+g.innerHTML=`<div class="font-semibold text-xs mb-1">${o.name} (${aa})</div>`
 
-o.codons.forEach(c=>{
+let sorted=[...o.codons].sort((a,b)=>(usage[b]||0)-(usage[a]||0))
+
+sorted.forEach((c,idx)=>{
+let freq=usage[c]||0
+
 let row=document.createElement("div")
-row.className="cursor-pointer hover:bg-slate-100 px-2 py-1"
-row.innerText=c
+row.className="flex justify-between px-2 py-1 cursor-pointer hover:bg-slate-100 rounded"
 
-row.onclick=()=>{
-apply(i,c)
-dropdown.classList.add("hidden")
-}
+if(idx===0) row.classList.add("bg-green-100")
 
+row.innerHTML=`<span>${c}</span><span class="text-xs">${freq.toFixed(2)}</span>`
+
+row.onclick=()=>{apply(i,c);dropdown.classList.add("hidden")}
 g.appendChild(row)
 })
 
 dropdown.appendChild(g)
 })
 
-/* 🔥 position beside box */
 let r=box.getBoundingClientRect()
-
-let left=r.right + 10 + window.scrollX
-let top=r.top + window.scrollY
-
-/* flip if overflow right */
-if(left + 240 > window.innerWidth){
-left = r.left - 240 + window.scrollX
-}
+let left=r.right+8+window.scrollX
+if(left+240>window.innerWidth) left=r.left-240+window.scrollX
 
 dropdown.style.left=left+"px"
-dropdown.style.top=top+"px"
+dropdown.style.top=(r.top+window.scrollY)+"px"
 }
 
 function apply(i,c){
 mut=mut.filter(m=>m.pos!==i)
-
 let old=orig[i]
 let nw=CODON_TO_AA[c]
-
-if(old!==nw){
-mut.push({pos:i,from:old,to:nw})
-}
-
+if(old!==nw) mut.push({pos:i,from:old,to:nw})
 codons[i]=c
 render()
 }
