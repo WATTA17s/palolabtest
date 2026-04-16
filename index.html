@@ -19,6 +19,7 @@ body{font-family:sans-serif}
 
 <h1 class="text-3xl font-semibold mb-6">🧬 Pa1oLAB</h1>
 
+<!-- NAV -->
 <div class="flex gap-2 mb-6">
   <button class="nav-btn active" onclick="switchPage(event,'align')">Alignment</button>
   <button class="nav-btn" onclick="switchPage(event,'mask')">Masking</button>
@@ -27,25 +28,30 @@ body{font-family:sans-serif}
 
 <div class="bg-white p-6 rounded-xl shadow">
 
-<!-- ALIGN -->
+<!-- ================= ALIGN ================= -->
 <div id="align">
+
 <textarea id="alignInput" class="w-full p-3 border rounded font-mono mb-4"
 placeholder=">ref
 MKTALVAG
 >mut1
 MKTAIVAG"></textarea>
 
-<button onclick="runAlign()" class="bg-indigo-600 text-white px-4 py-2 rounded">Align</button>
+<button onclick="runAlign()" class="bg-indigo-600 text-white px-4 py-2 rounded">
+Align
+</button>
+
 <div id="alignOut" class="mt-4 font-mono text-sm space-y-3"></div>
+
 </div>
 
-<!-- MASK -->
+<!-- ================= MASK ================= -->
 <div id="mask" class="hidden">
 
-<input id="maskInput" class="w-full p-3 border rounded font-mono mb-4 text-center"
+<input id="maskInput"
+class="w-full p-3 border rounded font-mono mb-4 text-center"
 placeholder="Protein sequence">
 
-<!-- TOGGLE -->
 <div class="flex justify-center gap-3 mb-3">
   <span>Sliding</span>
   <div id="toggle" class="w-10 h-5 bg-slate-300 rounded-full cursor-pointer relative transition">
@@ -71,8 +77,8 @@ placeholder="Protein sequence">
 
 </div>
 
-<!-- MUT -->
-<div id="mut" class="hidden">
+<!-- ================= MUT ================= -->
+<div id="mut" class="hidden relative">
 
 <select id="organism" class="border p-2 rounded mb-3">
 <option value="ecoli">E. coli</option>
@@ -80,15 +86,27 @@ placeholder="Protein sequence">
 <option value="pichia">Pichia</option>
 </select>
 
-<textarea id="dnaInput" class="w-full p-3 border rounded font-mono mb-3"
+<textarea id="dnaInput"
+class="w-full p-3 border rounded font-mono mb-3"
 placeholder="ATGGCC..."></textarea>
 
-<button onclick="loadDNA()" class="bg-indigo-600 text-white px-4 py-2 rounded">Load</button>
+<button onclick="loadDNA()" class="bg-indigo-600 text-white px-4 py-2 rounded">
+Load
+</button>
 
-<div id="viewer" class="mt-4 flex flex-wrap gap-2"></div>
+<div id="viewer" class="mt-4 flex flex-wrap gap-2 justify-center"></div>
+
+<!-- DROPDOWN -->
+<div id="dropdown" class="absolute hidden bg-white border rounded shadow p-2 text-sm z-50"></div>
+
 <div class="mt-4 text-sm" id="mutSummary"></div>
 
-<textarea id="outputDNA" class="w-full p-3 border rounded font-mono mt-3"></textarea>
+<textarea id="outputDNA"
+class="w-full p-3 border rounded font-mono mt-3"></textarea>
+
+<button onclick="copyDNA()" class="mt-2 bg-green-600 text-white px-3 py-1 rounded">
+Copy DNA
+</button>
 
 </div>
 
@@ -106,111 +124,70 @@ function switchPage(e,id){
 }
 
 /* ================= ALIGN ================= */
-
 function parseFASTA(text){
   return text.trim().split(">").filter(x=>x).map(b=>{
     let l=b.split("\n")
     return {name:l[0], seq:l.slice(1).join("").toUpperCase()}
   })
 }
-
-function score(a,b){
-  if(a==="-"||b==="-") return -4
-  return a===b?2:-1
-}
-
-function alignPair(s1,s2){
-  let gap=-4
-  let m=s1.length,n=s2.length
+function score(a,b){ return (a===b)?2:-1 }
+function alignPair(a,b){
+  let m=a.length,n=b.length,gap=-2
   let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
-
-  for(let i=0;i<=m;i++) dp[i][0]=i*gap
-  for(let j=0;j<=n;j++) dp[0][j]=j*gap
-
+  for(let i=1;i<=m;i++)dp[i][0]=i*gap
+  for(let j=1;j<=n;j++)dp[0][j]=j*gap
   for(let i=1;i<=m;i++){
     for(let j=1;j<=n;j++){
       dp[i][j]=Math.max(
-        dp[i-1][j-1]+score(s1[i-1],s2[j-1]),
+        dp[i-1][j-1]+score(a[i-1],b[j-1]),
         dp[i-1][j]+gap,
         dp[i][j-1]+gap
       )
     }
   }
-
-  let a1="",a2="",i=m,j=n
+  let i=m,j=n,res1="",res2=""
   while(i>0||j>0){
-    if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
-      a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
-    } else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
-      a1=s1[i-1]+a1; a2="-"+a2; i--
-    } else {
-      a1="-"+a1; a2=s2[j-1]+a2; j--
+    if(i>0&&j>0&&dp[i][j]===dp[i-1][j-1]+score(a[i-1],b[j-1])){
+      res1=a[--i]+res1;res2=b[--j]+res2
+    }else if(i>0&&dp[i][j]===dp[i-1][j]+gap){
+      res1=a[--i]+res1;res2="-"+res2
+    }else{
+      res1="-"+res1;res2=b[--j]+res2
     }
   }
-  return [a1,a2]
+  return [res1,res2]
 }
-
 function runAlign(){
   let data=parseFASTA(alignInput.value)
   if(data.length<2)return
-
-  let aligned=[data[0].seq]
-
-  for(let k=1;k<data.length;k++){
-    let seq=data[k].seq
-    let [newRef,newSeq]=alignPair(aligned[0],seq)
-
-    aligned=aligned.map(old=>{
-      let res="",idx=0
-      for(let i=0;i<newRef.length;i++){
-        if(newRef[i]==="-") res+="-"
-        else res+=old[idx++]||"-"
-      }
-      return res
-    })
-
-    aligned[0]=newRef
-    aligned.push(newSeq)
+  let ref=data[0].seq
+  let out=`${data[0].name}\n${ref}\n\n`
+  for(let i=1;i<data.length;i++){
+    let [a,b]=alignPair(ref,data[i].seq)
+    out+=`${data[i].name}\n${b}\n\n`
   }
-
-  alignOut.innerHTML=aligned.map((s,i)=>`
-    <div><div class="text-xs">${data[i].name}</div><div>${s}</div></div>
-  `).join("")
+  alignOut.innerText=out
 }
 
 /* ================= MASK ================= */
-
 const AA_SET=new Set(["A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V"])
 
-let state={
-  sequence:"",
-  manualMask:new Set(),
-  library:[],
-  sliding:false
-}
+let state={sequence:"",manualMask:new Set(),library:[],sliding:false}
 
 maskInput.oninput=e=>{
   let raw=e.target.value.toUpperCase()
-  let filtered=""
-  for(let c of raw){ if(AA_SET.has(c)) filtered+=c }
-  e.target.value=filtered
-
-  state.sequence=filtered
+  let f=""
+  for(let c of raw){ if(AA_SET.has(c)) f+=c }
+  e.target.value=f
+  state.sequence=f
   state.manualMask.clear()
   renderGrid()
 }
 
 toggle.onclick=()=>{
   state.sliding=!state.sliding
-  if(state.sliding){
-    toggle.classList.remove("bg-slate-300")
-    toggle.classList.add("bg-indigo-600")
-    dot.style.transform="translateX(20px)"
-  }else{
-    toggle.classList.remove("bg-indigo-600")
-    toggle.classList.add("bg-slate-300")
-    dot.style.transform="translateX(0px)"
-  }
+  toggle.classList.toggle("bg-indigo-600",state.sliding)
+  dot.style.transform=state.sliding?"translateX(20px)":"translateX(0px)"
 }
 
 function renderGrid(){
@@ -219,7 +196,6 @@ function renderGrid(){
     let d=document.createElement("div")
     d.className="box border rounded text-center cursor-pointer flex flex-col justify-center"
     if(state.manualMask.has(i)) d.classList.add("bg-red-500","text-white")
-
     d.innerHTML=`${aa}<div class="text-xs">${i+1}</div>`
     d.onclick=()=>{
       state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
@@ -230,124 +206,140 @@ function renderGrid(){
 }
 
 genBtn.onclick=()=>{
-  if(!state.sequence)return
-
   let newSeqs=[]
-
   if(state.manualMask.size){
     let arr=[...state.sequence]
     state.manualMask.forEach(i=>arr[i]="_")
     newSeqs.push(arr.join(""))
   }
-
   if(state.sliding){
-    let w=+win.value, s=+step.value
+    let w=+win.value,s=+step.value
     for(let i=0;i<=state.sequence.length-w;i+=s){
       let arr=[...state.sequence]
-      for(let j=0;j<w;j++) arr[i+j]="_"
+      for(let j=0;j<w;j++)arr[i+j]="_"
       newSeqs.push(arr.join(""))
     }
   }
-
-  newSeqs.forEach(seq=>{
-    if(!state.library.includes(seq)) state.library.push(seq)
-  })
-
+  newSeqs.forEach(s=>{ if(!state.library.includes(s)) state.library.push(s) })
   renderList()
 }
 
 function copy(btn,text){
   navigator.clipboard.writeText(text)
-  let t=btn.innerText
   btn.innerText="✓"
-  btn.classList.add("text-green-600")
-  setTimeout(()=>{
-    btn.innerText=t
-    btn.classList.remove("text-green-600")
-  },800)
+  setTimeout(()=>btn.innerText="Copy",800)
 }
 
 function renderList(){
   list.innerHTML=""
   state.library.forEach(seq=>{
     let row=document.createElement("div")
-    row.className="flex justify-between bg-white p-2 rounded items-center"
-
-    let txt=document.createElement("span")
-    txt.className="font-mono text-xs"
-    txt.innerText=seq
-
-    let actions=document.createElement("div")
-    actions.className="flex gap-3"
-
-    let c=document.createElement("button")
-    c.innerText="Copy"
-    c.className="text-xs bg-slate-200 px-2 rounded"
-    c.onclick=()=>copy(c,seq)
-
-    let d=document.createElement("button")
-    d.innerText="✕"
-    d.onclick=()=>{
-      state.library=state.library.filter(x=>x!==seq)
-      renderList()
-    }
-
-    actions.append(c,d)
-    row.append(txt,actions)
+    row.className="flex justify-between bg-white p-2 rounded"
+    row.innerHTML=`
+      <span class="text-xs font-mono">${seq}</span>
+      <div class="flex gap-3">
+        <button onclick="copy(this,'${seq}')" class="text-xs bg-slate-200 px-2 rounded">Copy</button>
+        <button onclick="removeSeq('${seq}')">✕</button>
+      </div>`
     list.appendChild(row)
   })
 }
-
-copyAll.onclick=(e)=>copy(e.target,state.library.join("\n"))
+function removeSeq(s){
+  state.library=state.library.filter(x=>x!==s)
+  renderList()
+}
+copyAll.onclick=e=>copy(e.target,state.library.join("\n"))
 
 /* ================= MUT ================= */
-
-const CODON={
-  ecoli:{K:"AAA",L:"CTG",A:"GCG",M:"ATG"},
-  yeast:{K:"AAA",L:"TTG",A:"GCT",M:"ATG"},
-  pichia:{K:"AAG",L:"TTG",A:"GCT",M:"ATG"}
+const CODON_TABLE_FULL={
+  F:["TTT","TTC"],L:["TTA","TTG","CTT","CTC","CTA","CTG"],
+  I:["ATT","ATC","ATA"],M:["ATG"],V:["GTT","GTC","GTA","GTG"],
+  S:["TCT","TCC","TCA","TCG","AGT","AGC"],
+  P:["CCT","CCC","CCA","CCG"],
+  T:["ACT","ACC","ACA","ACG"],
+  A:["GCT","GCC","GCA","GCG"],
+  Y:["TAT","TAC"],H:["CAT","CAC"],
+  Q:["CAA","CAG"],N:["AAT","AAC"],
+  K:["AAA","AAG"],D:["GAT","GAC"],
+  E:["GAA","GAG"],C:["TGT","TGC"],
+  W:["TGG"],R:["CGT","CGC","CGA","CGG","AGA","AGG"],
+  G:["GGT","GGC","GGA","GGG"]
 }
 
-const AA_TABLE={
-  ATG:"M",AAA:"K",AAG:"K",GCT:"A",GCG:"A",TTG:"L",CTG:"L"
+const CODON_TO_AA={}
+for(let aa in CODON_TABLE_FULL){
+  CODON_TABLE_FULL[aa].forEach(c=>CODON_TO_AA[c]=aa)
 }
 
-let codons=[],mutations=[]
+let codons=[],originalAA=[],mutations=[]
 
 function loadDNA(){
   let dna=dnaInput.value.toUpperCase().replace(/[^ATGC]/g,"")
-  codons=[]; mutations=[]
-  for(let i=0;i<dna.length;i+=3) codons.push(dna.slice(i,i+3))
+  codons=[];originalAA=[];mutations=[]
+  for(let i=0;i<dna.length;i+=3){
+    let c=dna.slice(i,i+3)
+    if(c.length===3){
+      codons.push(c)
+      originalAA.push(CODON_TO_AA[c]||"X")
+    }
+  }
   renderMut()
 }
 
 function renderMut(){
   viewer.innerHTML=""
   codons.forEach((c,i)=>{
-    let aa=AA_TABLE[c]||"X"
-    let d=document.createElement("div")
-    d.className="box border rounded text-center cursor-pointer flex flex-col justify-center"
-
-    d.innerHTML=`${i+1}<br>${c}<br><b>${aa}</b>`
-
-    d.onclick=()=>{
-      let newAA=prompt("Mutate to:")
-      if(!newAA)return
-      newAA=newAA.toUpperCase()
-
-      let newCod=CODON[organism.value][newAA]
-      if(!newCod)return alert("No codon")
-
-      mutations.push(`${aa}${i+1}${newAA}`)
-      codons[i]=newCod
-      renderMut()
-    }
-
-    viewer.appendChild(d)
+    let aa=CODON_TO_AA[c]||"X"
+    let box=document.createElement("div")
+    box.className="w-16 h-20 border rounded text-center cursor-pointer flex flex-col justify-center hover:bg-slate-100"
+    box.innerHTML=`<div>${i+1}</div><div>${c}</div><b>${aa}</b>`
+    box.onclick=(e)=>openDropdown(e,i)
+    viewer.appendChild(box)
   })
+  updateOutput()
+}
 
+function openDropdown(e,i){
+  let aa=CODON_TO_AA[codons[i]]
+  let list=CODON_TABLE_FULL[aa]||[]
+  dropdown.innerHTML=""
+  list.forEach(c=>{
+    let row=document.createElement("div")
+    row.className="p-1 hover:bg-slate-200 cursor-pointer"
+    row.innerText=`${c} → ${aa}`
+    row.onclick=()=>{
+      applyMutation(i,c)
+      dropdown.classList.add("hidden")
+    }
+    dropdown.appendChild(row)
+  })
+  dropdown.style.left=e.pageX+"px"
+  dropdown.style.top=e.pageY+"px"
+  dropdown.classList.remove("hidden")
+}
+
+function applyMutation(i,newCodon){
+  let oldAA=originalAA[i]
+  let newAA=CODON_TO_AA[newCodon]
+  if(oldAA!==newAA){
+    let mut=`${oldAA}${i+1}${newAA}`
+    if(!mutations.includes(mut)) mutations.push(mut)
+  }
+  codons[i]=newCodon
+  renderMut()
+}
+
+document.addEventListener("click",(e)=>{
+  if(!e.target.closest("#dropdown")) dropdown.classList.add("hidden")
+})
+
+function updateOutput(){
   outputDNA.value=codons.join("")
   mutSummary.innerText=mutations.join(" ")
+}
+
+function copyDNA(){
+  navigator.clipboard.writeText(outputDNA.value)
 }
 
 </script>
