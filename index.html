@@ -272,10 +272,13 @@ viewer.appendChild(d)
 /* summary */
 let summaryHTML+=`
 <div class="px-3 py-1 bg-yellow-100 border rounded-full text-sm">
-${m.fromAA}${m.pos+1}${m.toAA}
+
+${(m.fromAA || m.from)}${m.pos+1}${(m.toAA || m.to)}
+
 <span class="text-xs opacity-70 ml-1">
-(${m.fromCodon}→${m.toCodon})
+(${m.fromCodon ? m.fromCodon : ""}${m.fromCodon ? "→" : ""}${m.toCodon ? m.toCodon : ""})
 </span>
+
 </div>`
 })
 document.getElementById("mutSummary").innerHTML=summaryHTML
