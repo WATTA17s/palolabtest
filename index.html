@@ -377,22 +377,23 @@ URL.revokeObjectURL(url)
 /* ================= BACKUP ================= */
 async function backupData(){
 
-let name=document.getElementById("seqName").innerText
+let name=document.getElementById("seqName").innerText.trim()
 let sequence=codons.join("")
 let mutations = mut.length===0
 ? "None"
 : mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
 
-await fetch("https://script.google.com/macros/s/AKfycbyLe0WCFL9Y7PsCDJ28boPxfjcWSkSMr80J7Rt3IswENxz8t_7w_kg6ieTz0eBGAlVu/exec",{
+await fetch("https://script.google.com/macros/s/AKfycbzPrB-EgpmEg_pqARZf3tG_zw0ObBeWU_0-DTauKhCT9Tscgws_MHgtXFbYdsLrf3NFAQ/exec",{
 method:"POST",
 mode:"no-cors",
-headers:{
-"Content-Type":"application/json"
-},
-body:JSON.stringify({name,sequence,mutations})
+body: JSON.stringify({
+  name:name,
+  sequence:sequence,
+  mutations:mutations
+})
 })
 
-alert("Backup sent ✅ (check sheet)")
+alert("Backup sent ✅")
 }
 
 document.addEventListener("click",()=>{
