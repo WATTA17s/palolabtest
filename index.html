@@ -9,12 +9,14 @@
 body{font-family:sans-serif}
 .tab{padding:6px 14px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
+
 .box{
   width:64px;height:84px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   border-radius:12px;
 }
+
 .org{padding:5px 12px;border-radius:999px;border:1px solid #ddd;cursor:pointer}
 .org.active{background:#4f46e5;color:white}
 </style>
@@ -27,37 +29,31 @@ body{font-family:sans-serif}
 <h1 class="text-3xl mb-4">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-4">
-<div class="tab active" onclick="switchTab('mask',this)">Masking</div>
-<div class="tab" onclick="switchTab('mut',this)">Mutagenesis</div>
+<div class="tab active" onclick="switchTab('mut',this)">Mutagenesis</div>
 </div>
 
 <div class="bg-white p-6 rounded shadow">
-
-<!-- ================= MASK ================= -->
-<div id="mask">
-<input id="maskInput" class="w-full p-3 border rounded mb-3 text-center" placeholder="Protein">
-<div id="maskGrid" class="flex flex-wrap gap-2"></div>
-</div>
-
-<!-- ================= MUT ================= -->
-<div id="mut" class="hidden relative">
 
 <div class="flex gap-2 mb-3">
 <div class="org active" onclick="setOrg('ecoli',this)">E. coli</div>
 <div class="org" onclick="setOrg('pichia',this)">Pichia</div>
 </div>
 
-<textarea id="dnaInput" class="w-full p-3 border rounded mb-3"></textarea>
+<textarea id="dnaInput" class="w-full p-3 border rounded mb-3" placeholder="DNA sequence"></textarea>
 
 <div id="viewer" class="flex flex-wrap gap-2"></div>
 
 <div id="dropdown"
-class="absolute hidden bg-white border rounded shadow p-2 text-sm z-50 max-h-80 overflow-y-auto"></div>
+class="absolute hidden bg-white border rounded shadow p-3 text-sm z-50 max-h-80 overflow-y-auto"></div>
 
-<div class="mt-3">
-<div id="mutSummary" class="mb-2 text-sm"></div>
-<textarea id="outputDNA" class="w-full border p-2"></textarea>
-</div>
+<!-- OUTPUT -->
+<div class="mt-4">
+
+<div class="text-sm text-slate-500 mb-1">Mutations</div>
+<div id="mutSummary" class="flex flex-wrap gap-2 mb-3"></div>
+
+<div class="text-sm text-slate-500 mb-1">DNA Output</div>
+<textarea id="outputDNA" class="w-full border p-2 font-mono bg-slate-50"></textarea>
 
 </div>
 
@@ -66,70 +62,34 @@ class="absolute hidden bg-white border rounded shadow p-2 text-sm z-50 max-h-80 
 
 <script>
 
-/* ================= TAB ================= */
-function switchTab(id,el){
-dropdown.classList.add("hidden")
+/* ================= DATA ================= */
 
-document.getElementById("mask").classList.add("hidden")
-document.getElementById("mut").classList.add("hidden")
-
-document.getElementById(id).classList.remove("hidden")
-
-document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
-el.classList.add("active")
-}
-
-/* ================= MASK ================= */
-maskInput.oninput=e=>{
-let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
-maskGrid.innerHTML=""
-
-seq.split("").forEach((a,i)=>{
-let d=document.createElement("div")
-d.className="box border"
-d.innerHTML=`<div>${i+1}</div><b>${a}</b>`
-maskGrid.appendChild(d)
-})
-}
-
-/* ================= MUT ================= */
-
-let org="ecoli"
-
-function setOrg(o,el){
-org=o
-document.querySelectorAll('.org').forEach(x=>x.classList.remove('active'))
-el.classList.add('active')
-render()
-}
-
-/* AA */
 const AA_INFO={
-A:["GCT","GCC","GCA","GCG"],
-R:["CGT","CGC","CGA","CGG","AGA","AGG"],
-N:["AAT","AAC"],
-D:["GAT","GAC"],
-C:["TGT","TGC"],
-Q:["CAA","CAG"],
-E:["GAA","GAG"],
-G:["GGT","GGC","GGA","GGG"],
-H:["CAT","CAC"],
-I:["ATT","ATC","ATA"],
-L:["TTA","TTG","CTT","CTC","CTA","CTG"],
-K:["AAA","AAG"],
-M:["ATG"],
-F:["TTT","TTC"],
-P:["CCT","CCC","CCA","CCG"],
-S:["TCT","TCC","TCA","TCG","AGT","AGC"],
-T:["ACT","ACC","ACA","ACG"],
-W:["TGG"],
-Y:["TAT","TAC"],
-V:["GTT","GTC","GTA","GTG"]
+A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
+R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
+N:{name:"Asparagine",codons:["AAT","AAC"]},
+D:{name:"Aspartic Acid",codons:["GAT","GAC"]},
+C:{name:"Cysteine",codons:["TGT","TGC"]},
+Q:{name:"Glutamine",codons:["CAA","CAG"]},
+E:{name:"Glutamic Acid",codons:["GAA","GAG"]},
+G:{name:"Glycine",codons:["GGT","GGC","GGA","GGG"]},
+H:{name:"Histidine",codons:["CAT","CAC"]},
+I:{name:"Isoleucine",codons:["ATT","ATC","ATA"]},
+L:{name:"Leucine",codons:["TTA","TTG","CTT","CTC","CTA","CTG"]},
+K:{name:"Lysine",codons:["AAA","AAG"]},
+M:{name:"Methionine",codons:["ATG"]},
+F:{name:"Phenylalanine",codons:["TTT","TTC"]},
+P:{name:"Proline",codons:["CCT","CCC","CCA","CCG"]},
+S:{name:"Serine",codons:["TCT","TCC","TCA","TCG","AGT","AGC"]},
+T:{name:"Threonine",codons:["ACT","ACC","ACA","ACG"]},
+W:{name:"Tryptophan",codons:["TGG"]},
+Y:{name:"Tyrosine",codons:["TAT","TAC"]},
+V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
 }
 
 const CODON_TO_AA={}
-Object.entries(AA_INFO).forEach(([aa,list])=>{
-list.forEach(c=>CODON_TO_AA[c]=aa)
+Object.entries(AA_INFO).forEach(([aa,o])=>{
+o.codons.forEach(c=>CODON_TO_AA[c]=aa)
 })
 
 const CODON_USAGE = {
@@ -137,7 +97,17 @@ ecoli:{TTT:0.58,TTC:0.42,TTA:0.13,TTG:0.13,CTT:0.11,CTC:0.10,CTA:0.04,CTG:0.49,A
 pichia:{TTT:0.54,TTC:0.46,TTA:0.16,TTG:0.33,CTT:0.16,CTC:0.08,CTA:0.11,CTG:0.16,ATT:0.50,ATC:0.31,ATA:0.18,ATG:1.00,GTT:0.42,GTC:0.23,GTA:0.15,GTG:0.19,TCT:0.29,TCC:0.20,TCA:0.18,TCG:0.09,AGT:0.15,AGC:0.09,CCT:0.35,CCC:0.15,CCA:0.42,CCG:0.09,ACT:0.40,ACC:0.26,ACA:0.24,ACG:0.11,GCT:0.45,GCC:0.26,GCA:0.23,GCG:0.06,TAT:0.47,TAC:0.53,CAT:0.57,CAC:0.43,CAA:0.61,CAG:0.39,AAT:0.48,AAC:0.52,AAA:0.47,AAG:0.53,GAT:0.58,GAC:0.42,GAA:0.56,GAG:0.44,TGT:0.64,TGC:0.36,TGG:1.00,CGT:0.17,CGC:0.05,CGA:0.10,CGG:0.05,AGA:0.48,AGG:0.16,GGT:0.44,GGC:0.14,GGA:0.33,GGG:0.10,TAA:0.51,TAG:0.29,TGA:0.20}
 }
 
+/* ================= CORE ================= */
+
+let org="ecoli"
 let codons=[],orig=[],mut=[]
+
+function setOrg(o,el){
+org=o
+document.querySelectorAll('.org').forEach(x=>x.classList.remove('active'))
+el.classList.add('active')
+render()
+}
 
 dnaInput.oninput=load
 
@@ -156,18 +126,21 @@ render()
 }
 
 function render(){
-
 viewer.innerHTML=""
+let usage=CODON_USAGE[org]
 
 codons.forEach((c,i)=>{
-
 let aa=CODON_TO_AA[c]||"X"
+let f=usage[c]||0
 let isMut=mut.some(m=>m.pos===i)
 
 let d=document.createElement("div")
-d.className="box border cursor-pointer"
 
-if(isMut) d.classList.add("bg-yellow-200")
+let color="bg-white"
+if(f<0.1) color="bg-red-200"
+if(isMut) color="bg-yellow-200"
+
+d.className=`box border cursor-pointer ${color}`
 
 d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
 
@@ -180,23 +153,40 @@ viewer.appendChild(d)
 })
 
 outputDNA.value=codons.join("")
-mutSummary.innerText=mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(" ")
+
+mutSummary.innerHTML=""
+mut.forEach(m=>{
+let tag=document.createElement("div")
+tag.className="bg-indigo-100 px-2 py-1 rounded text-xs"
+tag.innerText=`${m.from}${m.pos+1}${m.to}`
+mutSummary.appendChild(tag)
+})
 }
 
-/* dropdown */
+/* ================= DROPDOWN ================= */
+
 function openDD(e,i,box){
 
 dropdown.innerHTML=""
 dropdown.classList.remove("hidden")
 
-Object.entries(AA_INFO).forEach(([aa,list])=>{
-let g=document.createElement("div")
-g.innerHTML=`<b>${aa}</b>`
+let usage=CODON_USAGE[org]
 
-list.forEach(c=>{
+Object.entries(AA_INFO).forEach(([aa,o])=>{
+let g=document.createElement("div")
+g.innerHTML=`<div class="font-bold text-xs text-slate-600">${o.name} (${aa})</div>`
+
+let sorted=[...o.codons].sort((a,b)=>(usage[b]||0)-(usage[a]||0))
+
+sorted.forEach((c,idx)=>{
+let freq=usage[c]||0
+
 let row=document.createElement("div")
-row.className="cursor-pointer hover:bg-slate-100"
-row.innerText=c
+row.className="flex justify-between px-2 py-1 cursor-pointer hover:bg-slate-100"
+
+if(idx===0) row.classList.add("bg-green-100")
+
+row.innerHTML=`<span>${c}</span><span class="text-xs">${freq.toFixed(2)}</span>`
 
 row.onclick=()=>{
 apply(i,c)
@@ -210,7 +200,7 @@ dropdown.appendChild(g)
 })
 
 let r=box.getBoundingClientRect()
-dropdown.style.left=r.right+"px"
+dropdown.style.left=r.right+5+"px"
 dropdown.style.top=r.top+"px"
 }
 
