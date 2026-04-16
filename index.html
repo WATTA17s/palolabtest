@@ -4,12 +4,6 @@
 <meta charset="UTF-8">
 <title>Pa1oLAB</title>
 <script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body{font-family:sans-serif}
-.nav{padding:8px 14px;border-radius:10px;background:white;cursor:pointer}
-.nav.active{background:#4f46e5;color:white}
-</style>
 </head>
 
 <body class="bg-slate-100 p-6">
@@ -19,48 +13,59 @@ body{font-family:sans-serif}
 <h1 class="text-3xl mb-6">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-6">
-  <button class="nav active" onclick="show('align')">Alignment</button>
-  <button class="nav" onclick="show('mask')">Masking</button>
-  <button class="nav" onclick="show('mut')">Mutagenesis</button>
+  <button onclick="switchPage('align')">Alignment</button>
+  <button onclick="switchPage('mask')">Masking</button>
+  <button onclick="switchPage('mut')">Mutagenesis</button>
 </div>
 
-<div class="bg-white p-6 rounded shadow">
+<div class="bg-white p-6 rounded">
 
-<!-- ALIGN -->
+<!-- ================= ALIGN ================= -->
 <div id="align">
-<textarea id="alignInput" class="w-full border p-2 mb-3 font-mono"></textarea>
-<button onclick="runAlign()" class="bg-indigo-600 text-white px-3 py-1 rounded">Align</button>
+
+<textarea id="alignInput" class="w-full border p-2 mb-3 font-mono"
+placeholder=">ref
+MKTALVAG
+>mut1
+MKTAIVAG"></textarea>
+
+<button onclick="runAlign()">Align</button>
+
 <div id="alignOut" class="font-mono mt-3"></div>
+
 </div>
 
-<!-- MASK -->
+<!-- ================= MASK ================= -->
 <div id="mask" class="hidden">
+
 <input id="maskInput" class="w-full border p-2 mb-3 font-mono">
 
 <div id="grid" class="flex flex-wrap gap-1"></div>
 
-<button onclick="genMask()" class="bg-indigo-600 text-white px-3 py-1 mt-2">Generate</button>
+<button onclick="generateMask()">Generate</button>
 
 <div id="maskOut" class="mt-3 font-mono"></div>
+
 </div>
 
-<!-- MUT -->
+<!-- ================= MUT ================= -->
 <div id="mut" class="hidden">
 
-<select id="org" class="border p-2 mb-2">
+<select id="organism">
 <option value="ecoli">E. coli</option>
 <option value="yeast">Yeast</option>
 <option value="pichia">Pichia</option>
 </select>
 
-<textarea id="dna" class="w-full border p-2 mb-3 font-mono"></textarea>
-<button onclick="loadDNA()" class="bg-indigo-600 text-white px-3 py-1">Load</button>
+<textarea id="dnaInput" class="w-full border p-2 mt-2 mb-2 font-mono"></textarea>
 
-<div id="viewer" class="font-mono mt-3"></div>
+<button onclick="loadDNA()">Load</button>
 
-<div id="mutList" class="mt-3 text-sm"></div>
+<div id="viewer" class="mt-3 font-mono"></div>
 
-<textarea id="outDNA" class="w-full border p-2 mt-3 font-mono"></textarea>
+<div id="mutSummary" class="mt-3"></div>
+
+<textarea id="outputDNA" class="w-full border p-2 mt-2 font-mono"></textarea>
 
 </div>
 
@@ -70,21 +75,95 @@ body{font-family:sans-serif}
 <script>
 
 /* NAV */
-function show(id){
-  document.querySelectorAll("#align,#mask,#mut").forEach(x=>x.classList.add("hidden"))
+function switchPage(id){
+  ["align","mask","mut"].forEach(x=>{
+    document.getElementById(x).classList.add("hidden")
+  })
   document.getElementById(id).classList.remove("hidden")
-
-  document.querySelectorAll(".nav").forEach(b=>b.classList.remove("active"))
-  event.target.classList.add("active")
 }
 
-/* ================= ALIGN ================= */
+/* ================= ALIGN (REAL MSA) ================= */
+
+function parseFASTA(text){
+  return text.trim().split(">")
+  .filter(x=>x)
+  .map(b=>{
+    let l=b.split("\n")
+    return {name:l[0], seq:l.slice(1).join("").toUpperCase()}
+  })
+}
+
+function score(a,b){
+  if(a==="-"||b==="-") return -4
+  return a===b?2:-1
+}
+
+function alignPair(s1,s2){
+
+  let gap=-4
+  let m=s1.length,n=s2.length
+  let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
+
+  for(let i=0;i<=m;i++) dp[i][0]=i*gap
+  for(let j=0;j<=n;j++) dp[0][j]=j*gap
+
+  for(let i=1;i<=m;i++){
+    for(let j=1;j<=n;j++){
+      dp[i][j]=Math.max(
+        dp[i-1][j-1]+score(s1[i-1],s2[j-1]),
+        dp[i-1][j]+gap,
+        dp[i][j-1]+gap
+      )
+    }
+  }
+
+  let a1="",a2="",i=m,j=n
+
+  while(i>0||j>0){
+    if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
+      a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
+    }
+    else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
+      a1=s1[i-1]+a1; a2="-"+a2; i--
+    }
+    else{
+      a1="-"+a1; a2=s2[j-1]+a2; j--
+    }
+  }
+
+  return [a1,a2]
+}
+
 function runAlign(){
-  let t=alignInput.value.trim().split("\n")
-  alignOut.innerHTML=t.map(x=>x).join("<br>")
+
+  let data=parseFASTA(alignInput.value)
+  if(data.length<2)return
+
+  let aligned=[data[0].seq]
+
+  for(let k=1;k<data.length;k++){
+
+    let seq=data[k].seq
+    let [newRef,newSeq]=alignPair(aligned[0],seq)
+
+    aligned=aligned.map(old=>{
+      let res="",idx=0
+      for(let i=0;i<newRef.length;i++){
+        if(newRef[i]==="-") res+="-"
+        else res+=old[idx++]||"-"
+      }
+      return res
+    })
+
+    aligned[0]=newRef
+    aligned.push(newSeq)
+  }
+
+  alignOut.innerHTML = aligned.map((s,i)=>data[i].name+"<br>"+s).join("<br><br>")
 }
 
 /* ================= MASK ================= */
+
 let maskSet=new Set()
 
 maskInput.oninput=e=>{
@@ -94,61 +173,67 @@ maskInput.oninput=e=>{
 }
 
 function renderMask(seq){
+
   grid.innerHTML=""
+
   seq.split("").forEach((aa,i)=>{
-    let b=document.createElement("div")
-    b.className="w-8 text-center border cursor-pointer"
+    let d=document.createElement("div")
+    d.className="w-8 text-center border cursor-pointer"
 
-    if(maskSet.has(i)) b.classList.add("bg-red-400","text-white")
+    if(maskSet.has(i)) d.classList.add("bg-red-400","text-white")
 
-    b.innerHTML=aa+"<div style='font-size:10px'>"+(i+1)+"</div>"
+    d.innerHTML=aa+"<div style='font-size:10px'>"+(i+1)+"</div>"
 
-    b.onclick=()=>{
+    d.onclick=()=>{
       maskSet.has(i)?maskSet.delete(i):maskSet.add(i)
       renderMask(seq)
     }
 
-    grid.appendChild(b)
+    grid.appendChild(d)
   })
 }
 
-function genMask(){
+function generateMask(){
   let seq=maskInput.value.split("")
   maskSet.forEach(i=>seq[i]="_")
   maskOut.innerText=seq.join("")
 }
 
-/* ================= MUT ================= */
+/* ================= MUTAGENESIS ================= */
 
-const CODON = {
+const CODON={
   ecoli:{K:"AAA",L:"CTG",A:"GCG",M:"ATG"},
   yeast:{K:"AAA",L:"TTG",A:"GCT",M:"ATG"},
   pichia:{K:"AAG",L:"TTG",A:"GCT",M:"ATG"}
 }
 
-const AA={
-"ATG":"M","AAA":"K","AAG":"K","GCT":"A","GCG":"A","TTG":"L","CTG":"L"
+const AA_TABLE={
+  ATG:"M",AAA:"K",AAG:"K",GCT:"A",GCG:"A",TTG:"L",CTG:"L"
 }
 
 let codons=[]
-let mut=[]
+let mutList=[]
 
 function loadDNA(){
-  let s=dna.value.toUpperCase().replace(/[^ATGC]/g,"")
-  codons=[]
-  mut=[]
 
-  for(let i=0;i<s.length;i+=3){
-    codons.push(s.slice(i,i+3))
+  let dna=dnaInput.value.toUpperCase().replace(/[^ATGC]/g,"")
+  codons=[]
+  mutList=[]
+
+  for(let i=0;i<dna.length;i+=3){
+    codons.push(dna.slice(i,i+3))
   }
+
   renderMut()
 }
 
 function renderMut(){
+
   viewer.innerHTML=""
 
   codons.forEach((c,i)=>{
-    let aa=AA[c]||"X"
+
+    let aa=AA_TABLE[c]||"X"
 
     let d=document.createElement("div")
     d.className="inline-block m-1 text-center cursor-pointer"
@@ -159,19 +244,22 @@ function renderMut(){
       let newAA=prompt("Mutate to:")
       if(!newAA)return
 
-      let cod=CODON[org.value][newAA]
-      if(!cod)return alert("no codon")
+      newAA=newAA.toUpperCase()
 
-      mut.push(aa+(i+1)+newAA)
+      let cod=CODON[organism.value][newAA]
+      if(!cod)return alert("No codon")
+
+      mutList.push(aa+(i+1)+newAA)
       codons[i]=cod
+
       renderMut()
     }
 
     viewer.appendChild(d)
   })
 
-  outDNA.value=codons.join("")
-  mutList.innerText=mut.join(" ")
+  outputDNA.value=codons.join("")
+  mutSummary.innerText=mutList.join(" ")
 }
 
 </script>
