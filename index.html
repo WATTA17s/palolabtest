@@ -380,10 +380,15 @@ render()
 
 /* ================= EXPORT ================= */
 function exportWord(){
+
 let nameHTML=document.getElementById("seqName").innerHTML
+
 let originalSeq = originalCodons.join("")
 let mutatedSeq = codons.join("")
-let mutText = mut.length===0 ? "None" : mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+
+let mutText = mut.length===0
+? "None"
+: mut.map(m=>`${(m.fromAA || m.from)}${m.pos+1}${(m.toAA || m.to)}`).join(", ")
 
 let content=`
 <html><body style="font-family:Courier New; font-size:12pt">
