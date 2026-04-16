@@ -44,6 +44,7 @@ body{font-family:sans-serif}
 
 <!-- MUT -->
 <div id="mut" class="hidden">
+
 <div class="flex flex-wrap gap-2 mb-3" id="orgButtons"></div>
 
 <textarea id="dnaInput" class="w-full p-3 border rounded mb-3" placeholder="DNA sequence"></textarea>
@@ -56,6 +57,18 @@ body{font-family:sans-serif}
 <div id="mutSummary" class="flex gap-2 flex-wrap"></div>
 
 <div id="outputDNA" class="w-full border p-3 mt-3 font-mono bg-white break-all rounded"></div>
+
+<!-- EXPORT -->
+<div class="mt-4 flex gap-2 items-center">
+<input id="seqName" placeholder="Sequence name"
+class="border px-3 py-2 rounded w-64">
+
+<button onclick="exportWord()"
+class="bg-blue-600 text-white px-4 py-2 rounded">
+Export Word
+</button>
+</div>
+
 </div>
 </div>
 
@@ -73,7 +86,7 @@ document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
 el.classList.add("active")
 }
 
-/* ================= MASKING ================= */
+/* MASK */
 let maskSeq="",maskSet=new Set(),library=[]
 
 document.getElementById("maskInput").oninput=e=>{
@@ -87,7 +100,6 @@ grid.innerHTML=""
 
 maskSeq.split("").forEach((a,i)=>{
 let d=document.createElement("div")
-
 d.className="box border cursor-pointer transition"
 
 if(maskSet.has(i)){
@@ -96,11 +108,7 @@ d.classList.add("bg-red-500","text-white","scale-110")
 d.classList.add("bg-white")
 }
 
-d.innerHTML=`
-<div class="text-xs opacity-70">${i+1}</div>
-<b class="text-lg">${a}</b>
-`
-
+d.innerHTML=`<div class="text-xs">${i+1}</div><b>${a}</b>`
 d.onclick=()=>{
 maskSet.has(i)?maskSet.delete(i):maskSet.add(i)
 renderMask()
@@ -119,19 +127,15 @@ for(let i=0;i<=maskSeq.length-w;i+=s){
 let arr=[...maskSeq]
 for(let j=0;j<w;j++) arr[i+j]="_"
 
-library.push(`
-<div class="font-mono px-2 py-1 bg-gray-100 rounded border">
-${arr.join("")}
-</div>
-`)
+library.push(arr.join(""))
 }
 
-document.getElementById("maskLib").innerHTML=library.join("")
+document.getElementById("maskLib").innerHTML=library.join("<br>")
 }
 
 function copyMask(){navigator.clipboard.writeText(library.join("\n"))}
 
-/* ================= AA ================= */
+/* AA */
 const AA_INFO={
 A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
 R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
@@ -176,7 +180,6 @@ render()
 orgButtons.appendChild(b)
 })
 
-/* CODON TABLE (ครบแล้ว) */
 const CODON_USAGE = {
 ecoli:{TTT:0.58,TTC:0.42,TTA:0.13,TTG:0.13,CTT:0.11,CTC:0.10,CTA:0.04,CTG:0.49,ATT:0.50,ATC:0.40,ATA:0.09,ATG:1.00,GTT:0.26,GTC:0.21,GTA:0.16,GTG:0.37,TCT:0.14,TCC:0.15,TCA:0.14,TCG:0.15,AGT:0.16,AGC:0.27,CCT:0.17,CCC:0.13,CCA:0.19,CCG:0.51,ACT:0.17,ACC:0.41,ACA:0.15,ACG:0.27,GCT:0.16,GCC:0.27,GCA:0.22,GCG:0.35,TAT:0.57,TAC:0.43,CAT:0.58,CAC:0.42,CAA:0.33,CAG:0.67,AAT:0.47,AAC:0.53,AAA:0.76,AAG:0.24,GAT:0.63,GAC:0.37,GAA:0.68,GAG:0.32,TGT:0.45,TGC:0.55,TGG:1.00,CGT:0.36,CGC:0.37,CGA:0.07,CGG:0.11,AGA:0.05,AGG:0.03,GGT:0.33,GGC:0.39,GGA:0.12,GGG:0.16,TAA:0.59,TAG:0.08,TGA:0.33},
 pichia:{TTT:0.54,TTC:0.46,TTA:0.16,TTG:0.33,CTT:0.16,CTC:0.08,CTA:0.11,CTG:0.16,ATT:0.50,ATC:0.31,ATA:0.18,ATG:1.00,GTT:0.42,GTC:0.23,GTA:0.15,GTG:0.19,TCT:0.29,TCC:0.20,TCA:0.18,TCG:0.09,AGT:0.15,AGC:0.09,CCT:0.35,CCC:0.15,CCA:0.42,CCG:0.09,ACT:0.40,ACC:0.26,ACA:0.24,ACG:0.11,GCT:0.45,GCC:0.26,GCA:0.23,GCG:0.06,TAT:0.47,TAC:0.53,CAT:0.57,CAC:0.43,CAA:0.61,CAG:0.39,AAT:0.48,AAC:0.52,AAA:0.47,AAG:0.53,GAT:0.58,GAC:0.42,GAA:0.56,GAG:0.44,TGT:0.64,TGC:0.36,TGG:1.00,CGT:0.17,CGC:0.05,CGA:0.10,CGG:0.05,AGA:0.48,AGG:0.16,GGT:0.44,GGC:0.14,GGA:0.33,GGG:0.10,TAA:0.51,TAG:0.29,TGA:0.20},
@@ -200,21 +203,16 @@ render()
 }
 
 function render(){
+
 let viewer=document.getElementById("viewer")
 viewer.innerHTML=""
-let usage=CODON_USAGE[org]
 
 codons.forEach((c,i)=>{
 let aa=CODON_TO_AA[c]||"X"
-let aaCodons=AA_INFO[aa]?.codons||[]
-let maxFreq=Math.max(...aaCodons.map(cd=>usage[cd]||0))
-let current=usage[c]||0
 
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
-if(current<maxFreq*0.1) d.classList.add("bg-red-200")
-if(current===maxFreq) d.classList.add("bg-green-200")
 if(mut.some(m=>m.pos===i)) d.classList.add("bg-yellow-200")
 
 d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
@@ -226,8 +224,7 @@ viewer.appendChild(d)
 /* mutation pill */
 let summaryHTML=""
 mut.forEach(m=>{
-summaryHTML+=`
-<div class="px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-full text-sm font-semibold shadow">
+summaryHTML+=`<div class="px-3 py-1 bg-yellow-100 border border-yellow-400 rounded-full text-sm font-semibold">
 ${m.from}${m.pos+1}${m.to}
 </div>`
 })
@@ -252,16 +249,14 @@ let dropdown=document.getElementById("dropdown")
 dropdown.innerHTML=""
 dropdown.classList.remove("hidden")
 
-let usage=CODON_USAGE[org]
-
 Object.entries(AA_INFO).forEach(([aa,o])=>{
 let g=document.createElement("div")
 g.innerHTML=`<div class="font-semibold text-xs">${o.name} (${aa})</div>`
 
 o.codons.forEach(c=>{
 let row=document.createElement("div")
-row.className="flex justify-between cursor-pointer hover:bg-gray-100 px-2"
-row.innerHTML=`<span>${c}</span><span>${(usage[c]||0).toFixed(2)}</span>`
+row.className="cursor-pointer hover:bg-gray-100 px-2"
+row.innerHTML=c
 row.onclick=()=>{apply(i,c);dropdown.classList.add("hidden")}
 g.appendChild(row)
 })
@@ -281,6 +276,42 @@ let nw=CODON_TO_AA[c]
 if(old!==nw) mut.push({pos:i,from:old,to:nw})
 codons[i]=c
 render()
+}
+
+/* WORD EXPORT */
+function exportWord(){
+
+let name=document.getElementById("seqName").value.trim() || "MySequence"
+let sequence=codons.join("")
+
+let mutText = mut.length===0
+? "None"
+: mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+
+let content=`
+<html>
+<body style="font-family:Courier New; font-size:12pt">
+
+<p><b>>${name}</b></p>
+
+<p>${sequence}</p>
+
+<p><b>Mutations:</b></p>
+<p>${mutText}</p>
+
+</body>
+</html>
+`
+
+let blob=new Blob(['\ufeff',content],{type:'application/msword'})
+let url=URL.createObjectURL(blob)
+
+let a=document.createElement("a")
+a.href=url
+a.download=`${name}.doc`
+a.click()
+
+URL.revokeObjectURL(url)
 }
 
 document.addEventListener("click",()=>{
