@@ -40,15 +40,7 @@ body{font-family:sans-serif}
 class="w-full p-3 border rounded mb-3 text-center"
 placeholder="Protein (1-letter only)">
 
-<div class="flex gap-2 mb-3 justify-center">
-<input id="win" value="5" class="w-16 border text-center">
-<input id="step" value="1" class="w-16 border text-center">
-<button onclick="generateMask()" class="bg-indigo-600 text-white px-3 rounded">Sliding</button>
-<button onclick="copyMask()" class="bg-green-600 text-white px-3 rounded">Copy</button>
-</div>
-
 <div id="maskGrid" class="flex flex-wrap gap-2"></div>
-<div id="maskLib" class="mt-2 text-sm"></div>
 
 </div>
 
@@ -87,64 +79,24 @@ el.classList.add("active")
 }
 
 /* ================= MASK ================= */
-let maskSeq="",maskSet=new Set(),library=[]
-
 maskInput.oninput=e=>{
-maskSeq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
-renderMask()
-}
-
-function renderMask(){
+let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
 maskGrid.innerHTML=""
-maskSeq.split("").forEach((a,i)=>{
+seq.split("").forEach((a,i)=>{
 let d=document.createElement("div")
-d.className="box border cursor-pointer"
-if(maskSet.has(i)) d.classList.add("bg-red-400","text-white")
-
+d.className="box border"
 d.innerHTML=`<div>${i+1}</div><b>${a}</b>`
-d.onclick=()=>{maskSet.has(i)?maskSet.delete(i):maskSet.add(i);renderMask()}
 maskGrid.appendChild(d)
 })
 }
 
-function generateMask(){
-let w=+win.value,s=+step.value
-for(let i=0;i<=maskSeq.length-w;i+=s){
-let arr=[...maskSeq]
-for(let j=0;j<w;j++) arr[i+j]="_"
-library.push(arr.join(""))
-}
-maskLib.innerHTML=library.join("<br>")
-}
-
-function copyMask(){
-navigator.clipboard.writeText(library.join("\n"))
-}
-
 /* ================= MUT ================= */
 
-/* 🔥 AA FULL + NAME */
 const AA_INFO={
 A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
-R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
-N:{name:"Asparagine",codons:["AAT","AAC"]},
-D:{name:"Aspartic Acid",codons:["GAT","GAC"]},
-C:{name:"Cysteine",codons:["TGT","TGC"]},
-Q:{name:"Glutamine",codons:["CAA","CAG"]},
-E:{name:"Glutamic Acid",codons:["GAA","GAG"]},
-G:{name:"Glycine",codons:["GGT","GGC","GGA","GGG"]},
-H:{name:"Histidine",codons:["CAT","CAC"]},
-I:{name:"Isoleucine",codons:["ATT","ATC","ATA"]},
 L:{name:"Leucine",codons:["TTA","TTG","CTT","CTC","CTA","CTG"]},
 K:{name:"Lysine",codons:["AAA","AAG"]},
-M:{name:"Methionine",codons:["ATG"]},
-F:{name:"Phenylalanine",codons:["TTT","TTC"]},
-P:{name:"Proline",codons:["CCT","CCC","CCA","CCG"]},
-S:{name:"Serine",codons:["TCT","TCC","TCA","TCG","AGT","AGC"]},
-T:{name:"Threonine",codons:["ACT","ACC","ACA","ACG"]},
-W:{name:"Tryptophan",codons:["TGG"]},
-Y:{name:"Tyrosine",codons:["TAT","TAC"]},
-V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
+M:{name:"Methionine",codons:["ATG"]}
 }
 
 const CODON_TO_AA={}
@@ -152,7 +104,13 @@ Object.entries(AA_INFO).forEach(([aa,o])=>{
 o.codons.forEach(c=>CODON_TO_AA[c]=aa)
 })
 
-/* 🔥 organisms */
+const CODON_USAGE={
+ecoli:{GCT:0.16,GCC:0.27,AAA:0.76,CTG:0.49},
+pichia:{GCT:0.45,GCC:0.26,AAA:0.47},
+coryne:{GCT:0.40,GCC:0.30},
+bacillus:{GCT:0.50,GCC:0.30}
+}
+
 const organisms=["ecoli","pichia","coryne","bacillus"]
 let org="ecoli"
 
@@ -169,15 +127,6 @@ render()
 orgButtons.appendChild(b)
 })
 
-/* 🔥 usage (ตัวอย่างเต็ม ecoli/pichia + placeholder อื่น) */
-const CODON_USAGE={
-ecoli:{TTT:0.58,TTC:0.42,CTG:0.49,AAA:0.76,GCC:0.27,GCT:0.16},
-pichia:{TTT:0.54,TTC:0.46,AAA:0.47,GCT:0.45,GCC:0.26},
-coryne:{TTT:0.37,TTC:0.63,GCC:0.45},
-bacillus:{TTT:0.60,TTC:0.40,GCC:0.60}
-}
-
-/* state */
 let codons=[],orig=[],mut=[]
 
 dnaInput.oninput=()=>{
@@ -199,14 +148,18 @@ let usage=CODON_USAGE[org]||{}
 
 codons.forEach((c,i)=>{
 let aa=CODON_TO_AA[c]||"X"
-let f=usage[c]||0
-let isMut=mut.some(m=>m.pos===i)
+let freq=usage[c]
 
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
-if(f<0.1) d.classList.add("bg-red-200")
-if(isMut) d.classList.add("bg-yellow-200")
+if(freq !== undefined && freq < 0.1){
+d.classList.add("bg-red-200")
+}
+
+if(mut.some(m=>m.pos===i)){
+d.classList.add("bg-yellow-200")
+}
 
 d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
 d.onclick=e=>{e.stopPropagation();openDD(e,i,d)}
@@ -218,49 +171,49 @@ outputDNA.value=codons.join("")
 mutSummary.innerHTML=mut.map(m=>`<div class="bg-indigo-100 px-2 text-xs rounded">${m.from}${m.pos+1}${m.to}</div>`).join("")
 }
 
-/* 🔥 dropdown upgrade */
+/* dropdown FIX */
 function openDD(e,i,box){
+
 dropdown.innerHTML=""
 dropdown.classList.remove("hidden")
 
-let usage=CODON_USAGE[org]||{}
-
 Object.entries(AA_INFO).forEach(([aa,o])=>{
-let group=document.createElement("div")
+let g=document.createElement("div")
 
-group.innerHTML=`<div class="font-semibold text-xs text-slate-600 mb-1">
-${o.name} (${aa})
-</div>`
+g.innerHTML=`<div class="font-semibold text-xs mb-1">${o.name} (${aa})</div>`
 
-let sorted=[...o.codons].sort((a,b)=>(usage[b]||0)-(usage[a]||0))
-
-sorted.forEach((c,idx)=>{
-let freq=usage[c]||0
-
+o.codons.forEach(c=>{
 let row=document.createElement("div")
-row.className="flex justify-between px-2 py-1 cursor-pointer hover:bg-slate-100 rounded"
+row.className="cursor-pointer hover:bg-slate-100 px-2 py-1"
+row.innerText=c
 
-if(idx===0) row.classList.add("bg-green-100")
+row.onclick=()=>{
+apply(i,c)
+dropdown.classList.add("hidden")
+}
 
-row.innerHTML=`
-<span>${c}</span>
-<span class="text-xs">${freq.toFixed(2)}</span>
-`
-
-row.onclick=()=>{apply(i,c);dropdown.classList.add("hidden")}
-
-group.appendChild(row)
+g.appendChild(row)
 })
 
-dropdown.appendChild(group)
+dropdown.appendChild(g)
 })
 
 let r=box.getBoundingClientRect()
-let left=r.right+8
-if(left+220>window.innerWidth) left=r.left-220
 
+let top=r.top + window.scrollY
+let left=r.right + 8
+
+// flip if overflow bottom
+if(top + 300 > window.innerHeight + window.scrollY){
+top = r.bottom + window.scrollY - 300
+}
+
+if(left + 220 > window.innerWidth){
+left = r.left - 220
+}
+
+dropdown.style.top=top+"px"
 dropdown.style.left=left+"px"
-dropdown.style.top=r.top+"px"
 }
 
 function apply(i,c){
