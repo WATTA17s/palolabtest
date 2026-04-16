@@ -341,11 +341,26 @@ dropdown.style.top = Math.min(r.top, window.innerHeight - 250) + "px"
 }
 
 function apply(i,c){
-mut=mut.filter(m=>m.pos!==i)
-let old=orig[i]
-let nw=CODON_TO_AA[c]
-if(old!==nw) mut.push({pos:i,from:old,to:nw})
-codons[i]=c
+
+let oldCodon = codons[i]
+let oldAA = orig[i]
+let newAA = CODON_TO_AA[c]
+
+
+mut = mut.filter(m => m.pos !== i)
+
+
+if(oldCodon !== c){
+  mut.push({
+    pos:i,
+    fromAA:oldAA,
+    toAA:newAA,
+    fromCodon:oldCodon,
+    toCodon:c
+  })
+}
+
+codons[i] = c
 render()
 }
 
