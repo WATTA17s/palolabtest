@@ -193,7 +193,7 @@ let current=usage[c]||0
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
-if(current<maxFreq*0.3) d.classList.add("bg-red-200")
+if(current<maxFreq*0.1) d.classList.add("bg-red-200")
 if(current===maxFreq) d.classList.add("bg-green-200")
 if(mut.some(m=>m.pos===i)) d.classList.add("bg-yellow-200")
 
