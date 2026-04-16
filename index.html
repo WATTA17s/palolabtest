@@ -183,7 +183,7 @@ V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
 const CODON_TO_AA={}
 Object.entries(AA_INFO).forEach(([aa,o])=>o.codons.forEach(c=>CODON_TO_AA[c]=aa))
 
-/* ================= ORGANISM ================= */
+
 const organisms=["ecoli","pichia","coryne","bacillus"]
 let org="ecoli"
 
@@ -228,7 +228,39 @@ let viewer=document.getElementById("viewer")
 viewer.innerHTML=""
 
 codons.forEach((c,i)=>{
-let aa=CODON_TO_AA[c]||"X"
+let aa = CODON_TO_AA[c] || "X"
+let usage = CODON_USAGE[org] || {}
+
+let aaCodons = AA_INFO[aa]?.codons || []
+let sorted = [...aaCodons].sort((a,b)=>(usage[b]||0)-(usage[a]||0))
+
+let current = usage[c] || 0
+let rank = sorted.indexOf(c)
+
+let d=document.createElement("div")
+d.className="box border cursor-pointer"
+
+// 🟢 best codon
+if(rank === 0){
+  d.classList.add("bg-green-200")
+}
+
+// 🔴 rare จริง
+if(rank === sorted.length-1 && current < 0.15){
+  d.classList.add("bg-red-200")
+}
+
+// 🟡 mutated
+if(mut.some(m=>m.pos===i)){
+  d.classList.add("bg-yellow-200")
+}
+
+d.innerHTML=`
+<div>${i+1}</div>
+<b>${aa}</b>
+<div>${c}</div>
+<div class="text-[10px] opacity-70">${current.toFixed(2)}</div>
+`
 
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
@@ -321,16 +353,23 @@ URL.revokeObjectURL(url)
 
 /* ================= BACKUP ================= */
 async function backupData(){
+
 let name=document.getElementById("seqName").innerText
 let sequence=codons.join("")
-let mutations = mut.length===0 ? "None" : mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+let mutations = mut.length===0
+? "None"
+: mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
 
 await fetch("https://script.google.com/macros/s/AKfycbyLe0WCFL9Y7PsCDJ28boPxfjcWSkSMr80J7Rt3IswENxz8t_7w_kg6ieTz0eBGAlVu/exec",{
 method:"POST",
+mode:"no-cors",
+headers:{
+"Content-Type":"application/json"
+},
 body:JSON.stringify({name,sequence,mutations})
 })
 
-alert("Backup saved to Google Sheet ✅")
+alert("Backup sent ✅ (check sheet)")
 }
 
 document.addEventListener("click",()=>{
