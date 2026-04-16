@@ -211,17 +211,26 @@ bacillus:{TTT:0.60,TTC:0.40,TTA:0.12,TTG:0.12,CTT:0.24,CTC:0.18,CTA:0.06,CTG:0.2
 /* ================= CORE ================= */
 let codons=[],orig=[],mut=[],originalCodons=[]
 
-document.getElementById("dnaInput").oninput=e=>{
-let dna=e.target.value.toUpperCase().replace(/[^ATGC]/g,"")
-codons=[];orig=[];mut=[]
+document.getElementById("dnaInput").oninput = e => {
+
+let dna = e.target.value.toUpperCase().replace(/[^ATGC]/g,"")
+
+// 🔥 reset ทุกอย่าง (แก้ REF เพี้ยน)
+codons=[];orig=[];mut=[];originalCodons=[]
+
 for(let i=0;i<dna.length;i+=3){
+
 let c=dna.slice(i,i+3)
+
 if(c.length===3){
 codons.push(c)
 orig.push(CODON_TO_AA[c]||"X")
-originalCodons.push(c)
+
+// 🔥 สำคัญ: ใช้ index ไม่ใช้ push
+originalCodons[i/3] = c
 }
 }
+
 render()
 }
 
