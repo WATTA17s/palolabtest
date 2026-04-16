@@ -1,40 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
 <meta charset="UTF-8">
 <title>Pa1oLAB</title>
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body { font-family: sans-serif; }
-
-.nav-btn {
-  padding:8px 14px;
-  border-radius:10px;
-  background:white;
-  cursor:pointer;
-  transition:0.2s;
-}
-.nav-btn:hover { background:#f1f5f9; }
-.nav-btn.active { background:#4f46e5; color:white; }
-
-.toggle {
-  width:40px;height:20px;background:#e2e8f0;border-radius:999px;cursor:pointer;position:relative;
-}
-.toggle::after {
-  content:"";width:16px;height:16px;background:white;position:absolute;top:2px;left:2px;border-radius:50%;
-  transition:0.2s;
-}
-.toggle.active { background:#4f46e5; }
-.toggle.active::after { transform:translateX(20px); }
-
-.btn {
-  transition: all 0.15s ease;
-}
-.btn:hover { transform: translateY(-1px); }
-.btn:active { transform: scale(0.97); }
-
-.copy-success { color:#22c55e; }
+body{font-family:sans-serif}
+.nav{padding:8px 14px;border-radius:10px;background:white;cursor:pointer}
+.nav.active{background:#4f46e5;color:white}
 </style>
 </head>
 
@@ -42,68 +16,51 @@ body { font-family: sans-serif; }
 
 <div class="max-w-6xl mx-auto">
 
-<h1 class="text-3xl mb-6 font-semibold">🧬 Pa1oLAB</h1>
+<h1 class="text-3xl mb-6">🧬 Pa1oLAB</h1>
 
-<!-- NAV -->
 <div class="flex gap-2 mb-6">
-  <button data-page="align" class="nav-btn active">Alignment</button>
-  <button data-page="mask" class="nav-btn">Masking</button>
+  <button class="nav active" onclick="show('align')">Alignment</button>
+  <button class="nav" onclick="show('mask')">Masking</button>
+  <button class="nav" onclick="show('mut')">Mutagenesis</button>
 </div>
 
-<div class="bg-white p-6 rounded-xl shadow-sm">
+<div class="bg-white p-6 rounded shadow">
 
 <!-- ALIGN -->
-<div id="align" class="view">
-
-<textarea id="alignInput"
-class="w-full p-3 border rounded font-mono mb-4 text-sm"
-placeholder=">ref
-MKTALVAG
->mut1
-MKTAIVAG"></textarea>
-
-<button onclick="runAlign()" class="btn bg-indigo-600 text-white px-4 py-2 rounded mb-4">
-Align
-</button>
-
-<div id="alignOutput" class="font-mono text-sm space-y-3"></div>
-
+<div id="align">
+<textarea id="alignInput" class="w-full border p-2 mb-3 font-mono"></textarea>
+<button onclick="runAlign()" class="bg-indigo-600 text-white px-3 py-1 rounded">Align</button>
+<div id="alignOut" class="font-mono mt-3"></div>
 </div>
 
 <!-- MASK -->
-<div id="mask" class="view hidden">
+<div id="mask" class="hidden">
+<input id="maskInput" class="w-full border p-2 mb-3 font-mono">
 
-<input id="seqInput"
-class="w-full p-3 border rounded font-mono text-center mb-4"
-placeholder="Protein sequence">
+<div id="grid" class="flex flex-wrap gap-1"></div>
 
-<div class="flex justify-center gap-3 mb-4">
-  <span class="text-sm">Sliding</span>
-  <div id="toggle" class="toggle"></div>
+<button onclick="genMask()" class="bg-indigo-600 text-white px-3 py-1 mt-2">Generate</button>
+
+<div id="maskOut" class="mt-3 font-mono"></div>
 </div>
 
-<div class="flex justify-center gap-2 mb-4">
-  <input id="win" type="number" value="5" class="w-16 border text-center rounded">
-  <input id="step" type="number" value="1" class="w-16 border text-center rounded">
-  <button id="genBtn" class="btn bg-indigo-600 text-white px-4 rounded">Generate</button>
-  <button id="clearBtn" class="btn bg-slate-200 px-4 rounded">Clear</button>
-</div>
+<!-- MUT -->
+<div id="mut" class="hidden">
 
-<div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
+<select id="org" class="border p-2 mb-2">
+<option value="ecoli">E. coli</option>
+<option value="yeast">Yeast</option>
+<option value="pichia">Pichia</option>
+</select>
 
-<div class="text-center text-xs text-slate-500 mb-4" id="summary">
-No mask selected
-</div>
+<textarea id="dna" class="w-full border p-2 mb-3 font-mono"></textarea>
+<button onclick="loadDNA()" class="bg-indigo-600 text-white px-3 py-1">Load</button>
 
-<div class="bg-slate-100 p-3 rounded">
-  <div class="flex justify-between mb-2">
-    <span class="text-xs">Library</span>
-    <button id="copyAll" class="btn text-xs bg-indigo-600 text-white px-3 py-1 rounded">
-      Copy All
-    </button>
-  </div>
-  <div id="list" class="space-y-2 max-h-48 overflow-y-auto"></div>
-</div>
+<div id="viewer" class="font-mono mt-3"></div>
+
+<div id="mutList" class="mt-3 text-sm"></div>
+
+<textarea id="outDNA" class="w-full border p-2 mt-3 font-mono"></textarea>
 
 </div>
 
@@ -112,243 +69,109 @@ No mask selected
 
 <script>
 
-/* VALID AA */
-const AA_SET = new Set([
-"A","R","N","D","C","Q","E","G",
-"H","I","L","K","M","F","P","S",
-"T","W","Y","V"
-])
-
-/* STATE */
-let state = {
-  sequence:"",
-  manualMask:new Set(),
-  library:[],
-  useSliding:false
-}
-
 /* NAV */
-document.querySelectorAll("[data-page]").forEach(btn=>{
-  btn.onclick=()=>{
-    document.querySelectorAll("[data-page]").forEach(b=>b.classList.remove("active"))
-    btn.classList.add("active")
-    document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"))
-    document.getElementById(btn.dataset.page).classList.remove("hidden")
-  }
-})
+function show(id){
+  document.querySelectorAll("#align,#mask,#mut").forEach(x=>x.classList.add("hidden"))
+  document.getElementById(id).classList.remove("hidden")
 
-/* ALIGN */
-function parseFASTA(text){
-  return text.trim().split(">").filter(x=>x).map(b=>{
-    let l=b.split("\n")
-    return {name:l[0], seq:l.slice(1).join("").toUpperCase()}
-  })
+  document.querySelectorAll(".nav").forEach(b=>b.classList.remove("active"))
+  event.target.classList.add("active")
 }
 
-function score(a,b){
-  if(a==="-"||b==="-") return -4
-  return a===b?2:-1
-}
-
-function alignPair(s1,s2){
-  let gap=-4
-  let m=s1.length,n=s2.length
-  let dp=Array.from({length:m+1},()=>Array(n+1).fill(0))
-
-  for(let i=0;i<=m;i++) dp[i][0]=i*gap
-  for(let j=0;j<=n;j++) dp[0][j]=j*gap
-
-  for(let i=1;i<=m;i++){
-    for(let j=1;j<=n;j++){
-      dp[i][j]=Math.max(
-        dp[i-1][j-1]+score(s1[i-1],s2[j-1]),
-        dp[i-1][j]+gap,
-        dp[i][j-1]+gap
-      )
-    }
-  }
-
-  let a1="",a2="",i=m,j=n
-  while(i>0||j>0){
-    if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
-      a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
-    } else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
-      a1=s1[i-1]+a1; a2="-"+a2; i--
-    } else {
-      a1="-"+a1; a2=s2[j-1]+a2; j--
-    }
-  }
-  return [a1,a2]
-}
-
+/* ================= ALIGN ================= */
 function runAlign(){
-  const data=parseFASTA(alignInput.value)
-  if(data.length<2) return
-
-  let aligned=[data[0].seq]
-
-  for(let k=1;k<data.length;k++){
-    let seq=data[k].seq
-    const [newRef,newSeq]=alignPair(aligned[0],seq)
-
-    aligned=aligned.map(old=>{
-      let res="",idx=0
-      for(let i=0;i<newRef.length;i++){
-        if(newRef[i]==="-") res+="-"
-        else res+=old[idx++]||"-"
-      }
-      return res
-    })
-
-    aligned[0]=newRef
-    aligned.push(newSeq)
-  }
-
-  renderAlignment(data.map(d=>d.name),aligned)
+  let t=alignInput.value.trim().split("\n")
+  alignOut.innerHTML=t.map(x=>x).join("<br>")
 }
 
-function renderAlignment(names,seqs){
-  alignOutput.innerHTML=""
+/* ================= MASK ================= */
+let maskSet=new Set()
 
-  seqs.forEach((seq,idx)=>{
-    let row=document.createElement("div")
-
-    let html=""
-    for(let i=0;i<seq.length;i++){
-      html+=`<span class="inline-block w-6 text-center">${seq[i]}</span>`
-    }
-
-    row.innerHTML=`<div class="text-xs">${names[idx]}</div>${html}`
-    alignOutput.appendChild(row)
-  })
+maskInput.oninput=e=>{
+  let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
+  maskInput.value=seq
+  renderMask(seq)
 }
 
-/* INPUT FILTER */
-seqInput.oninput=e=>{
-  let raw=e.target.value.toUpperCase()
-  let filtered=""
-  for(let c of raw){ if(AA_SET.has(c)) filtered+=c }
-  e.target.value=filtered
-  state.sequence=filtered
-  state.manualMask.clear()
-  renderGrid()
-}
-
-/* TOGGLE */
-toggle.onclick=()=>{
-  state.useSliding=!state.useSliding
-  toggle.classList.toggle("active")
-}
-
-/* GRID */
-function renderGrid(){
+function renderMask(seq){
   grid.innerHTML=""
-  state.sequence.split("").forEach((aa,i)=>{
-    let box=document.createElement("div")
-    box.className="w-10 h-12 border rounded flex flex-col items-center justify-center cursor-pointer"
+  seq.split("").forEach((aa,i)=>{
+    let b=document.createElement("div")
+    b.className="w-8 text-center border cursor-pointer"
 
-    box.innerHTML=`${aa}<div style="font-size:10px">${i+1}</div>`
+    if(maskSet.has(i)) b.classList.add("bg-red-400","text-white")
 
-    if(state.manualMask.has(i)) box.classList.add("bg-red-500","text-white")
+    b.innerHTML=aa+"<div style='font-size:10px'>"+(i+1)+"</div>"
 
-    box.onclick=()=>{
-      state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
-      renderGrid()
-      updateSummary()
+    b.onclick=()=>{
+      maskSet.has(i)?maskSet.delete(i):maskSet.add(i)
+      renderMask(seq)
     }
 
-    grid.appendChild(box)
+    grid.appendChild(b)
   })
 }
 
-function updateSummary(){
-  summary.innerText = state.manualMask.size
-    ? "Masked: "+[...state.manualMask].map(i=>i+1).join(", ")
-    : "No mask selected"
+function genMask(){
+  let seq=maskInput.value.split("")
+  maskSet.forEach(i=>seq[i]="_")
+  maskOut.innerText=seq.join("")
 }
 
-/* CLEAR */
-clearBtn.onclick=()=>{
-  state.manualMask.clear()
-  renderGrid()
-  updateSummary()
+/* ================= MUT ================= */
+
+const CODON = {
+  ecoli:{K:"AAA",L:"CTG",A:"GCG",M:"ATG"},
+  yeast:{K:"AAA",L:"TTG",A:"GCT",M:"ATG"},
+  pichia:{K:"AAG",L:"TTG",A:"GCT",M:"ATG"}
 }
 
-/* GENERATE */
-genBtn.onclick=()=>{
-  if(!state.sequence) return
+const AA={
+"ATG":"M","AAA":"K","AAG":"K","GCT":"A","GCG":"A","TTG":"L","CTG":"L"
+}
 
-  let newSeqs=[]
+let codons=[]
+let mut=[]
 
-  if(state.manualMask.size){
-    let arr=[...state.sequence]
-    state.manualMask.forEach(i=>arr[i]="_")
-    newSeqs.push(arr.join(""))
+function loadDNA(){
+  let s=dna.value.toUpperCase().replace(/[^ATGC]/g,"")
+  codons=[]
+  mut=[]
+
+  for(let i=0;i<s.length;i+=3){
+    codons.push(s.slice(i,i+3))
   }
-
-  if(state.useSliding){
-    let w=+win.value, s=+step.value
-    for(let i=0;i<=state.sequence.length-w;i+=s){
-      let arr=[...state.sequence]
-      for(let j=0;j<w;j++) arr[i+j]="_"
-      newSeqs.push(arr.join(""))
-    }
-  }
-
-  newSeqs.forEach(s=>{
-    if(!state.library.includes(s)) state.library.push(s)
-  })
-
-  renderList()
+  renderMut()
 }
 
-/* COPY */
-function copy(btn,text){
-  navigator.clipboard.writeText(text)
-  let t=btn.innerText
-  btn.innerText="✓"
-  btn.classList.add("copy-success")
-  setTimeout(()=>{
-    btn.innerText=t
-    btn.classList.remove("copy-success")
-  },800)
-}
+function renderMut(){
+  viewer.innerHTML=""
 
-function renderList(){
-  list.innerHTML=""
+  codons.forEach((c,i)=>{
+    let aa=AA[c]||"X"
 
-  state.library.forEach(seq=>{
-    let row=document.createElement("div")
-    row.className="flex justify-between bg-white p-2 rounded items-center"
+    let d=document.createElement("div")
+    d.className="inline-block m-1 text-center cursor-pointer"
 
-    let txt=document.createElement("span")
-    txt.className="font-mono text-xs"
-    txt.innerText=seq
+    d.innerHTML=`${i+1}<br>${c}<br><b>${aa}</b>`
 
-    let actions=document.createElement("div")
-    actions.className="flex gap-3"  /* ✅ spacing fix */
+    d.onclick=()=>{
+      let newAA=prompt("Mutate to:")
+      if(!newAA)return
 
-    let copyBtn=document.createElement("button")
-    copyBtn.innerText="Copy"
-    copyBtn.className="btn text-xs bg-slate-100 px-2 rounded"
-    copyBtn.onclick=()=>copy(copyBtn,seq)
+      let cod=CODON[org.value][newAA]
+      if(!cod)return alert("no codon")
 
-    let del=document.createElement("button")
-    del.innerText="✕"
-    del.onclick=()=>{
-      state.library=state.library.filter(x=>x!==seq)
-      renderList()
+      mut.push(aa+(i+1)+newAA)
+      codons[i]=cod
+      renderMut()
     }
 
-    actions.append(copyBtn,del)
-    row.append(txt,actions)
-    list.appendChild(row)
+    viewer.appendChild(d)
   })
-}
 
-/* COPY ALL FIX */
-copyAll.onclick=(e)=>{
-  copy(e.target, state.library.join("\n"))
+  outDNA.value=codons.join("")
+  mutList.innerText=mut.join(" ")
 }
 
 </script>
