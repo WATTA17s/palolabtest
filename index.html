@@ -19,7 +19,6 @@ body{font-family:sans-serif}
 
 <h1 class="text-3xl font-semibold mb-6">🧬 Pa1oLAB</h1>
 
-<!-- NAV -->
 <div class="flex gap-2 mb-6">
   <button class="nav-btn active" onclick="switchPage(event,'align')">Alignment</button>
   <button class="nav-btn" onclick="switchPage(event,'mask')">Masking</button>
@@ -28,35 +27,28 @@ body{font-family:sans-serif}
 
 <div class="bg-white p-6 rounded-xl shadow">
 
-<!-- ================= ALIGN ================= -->
+<!-- ALIGN -->
 <div id="align">
-
-<textarea id="alignInput"
-class="w-full p-3 border rounded font-mono mb-4"
+<textarea id="alignInput" class="w-full p-3 border rounded font-mono mb-4"
 placeholder=">ref
 MKTALVAG
 >mut1
 MKTAIVAG"></textarea>
 
-<button onclick="runAlign()" class="bg-indigo-600 text-white px-4 py-2 rounded">
-Align
-</button>
-
+<button onclick="runAlign()" class="bg-indigo-600 text-white px-4 py-2 rounded">Align</button>
 <div id="alignOut" class="mt-4 font-mono text-sm space-y-3"></div>
-
 </div>
 
-<!-- ================= MASK ================= -->
+<!-- MASK -->
 <div id="mask" class="hidden">
 
-<input id="maskInput"
-class="w-full p-3 border rounded font-mono mb-4 text-center"
+<input id="maskInput" class="w-full p-3 border rounded font-mono mb-4 text-center"
 placeholder="Protein sequence">
 
 <!-- TOGGLE -->
 <div class="flex justify-center gap-3 mb-3">
   <span>Sliding</span>
-  <div id="toggle" class="w-10 h-5 bg-slate-300 rounded-full cursor-pointer relative">
+  <div id="toggle" class="w-10 h-5 bg-slate-300 rounded-full cursor-pointer relative transition">
     <div id="dot" class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 transition"></div>
   </div>
 </div>
@@ -67,10 +59,8 @@ placeholder="Protein sequence">
   <button id="genBtn" class="bg-indigo-600 text-white px-4 rounded">Generate</button>
 </div>
 
-<!-- GRID -->
 <div id="grid" class="flex flex-wrap gap-2 justify-center mb-4"></div>
 
-<!-- LIBRARY -->
 <div class="bg-slate-100 p-3 rounded">
   <div class="flex justify-between mb-2">
     <span class="text-xs">Library</span>
@@ -81,7 +71,7 @@ placeholder="Protein sequence">
 
 </div>
 
-<!-- ================= MUT ================= -->
+<!-- MUT -->
 <div id="mut" class="hidden">
 
 <select id="organism" class="border p-2 rounded mb-3">
@@ -90,20 +80,15 @@ placeholder="Protein sequence">
 <option value="pichia">Pichia</option>
 </select>
 
-<textarea id="dnaInput"
-class="w-full p-3 border rounded font-mono mb-3"
+<textarea id="dnaInput" class="w-full p-3 border rounded font-mono mb-3"
 placeholder="ATGGCC..."></textarea>
 
-<button onclick="loadDNA()" class="bg-indigo-600 text-white px-4 py-2 rounded">
-Load
-</button>
+<button onclick="loadDNA()" class="bg-indigo-600 text-white px-4 py-2 rounded">Load</button>
 
 <div id="viewer" class="mt-4 flex flex-wrap gap-2"></div>
-
 <div class="mt-4 text-sm" id="mutSummary"></div>
 
-<textarea id="outputDNA"
-class="w-full p-3 border rounded font-mono mt-3"></textarea>
+<textarea id="outputDNA" class="w-full p-3 border rounded font-mono mt-3"></textarea>
 
 </div>
 
@@ -153,19 +138,15 @@ function alignPair(s1,s2){
   }
 
   let a1="",a2="",i=m,j=n
-
   while(i>0||j>0){
     if(i>0&&j>0 && dp[i][j]===dp[i-1][j-1]+score(s1[i-1],s2[j-1])){
       a1=s1[i-1]+a1; a2=s2[j-1]+a2; i--;j--
-    }
-    else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
+    } else if(i>0 && dp[i][j]===dp[i-1][j]+gap){
       a1=s1[i-1]+a1; a2="-"+a2; i--
-    }
-    else{
+    } else {
       a1="-"+a1; a2=s2[j-1]+a2; j--
     }
   }
-
   return [a1,a2]
 }
 
@@ -193,14 +174,13 @@ function runAlign(){
   }
 
   alignOut.innerHTML=aligned.map((s,i)=>`
-    <div>
-      <div class="text-xs">${data[i].name}</div>
-      <div>${s}</div>
-    </div>
+    <div><div class="text-xs">${data[i].name}</div><div>${s}</div></div>
   `).join("")
 }
 
 /* ================= MASK ================= */
+
+const AA_SET=new Set(["A","R","N","D","C","Q","E","G","H","I","L","K","M","F","P","S","T","W","Y","V"])
 
 let state={
   sequence:"",
@@ -210,35 +190,41 @@ let state={
 }
 
 maskInput.oninput=e=>{
-  let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
-  maskInput.value=seq
-  state.sequence=seq
+  let raw=e.target.value.toUpperCase()
+  let filtered=""
+  for(let c of raw){ if(AA_SET.has(c)) filtered+=c }
+  e.target.value=filtered
+
+  state.sequence=filtered
   state.manualMask.clear()
   renderGrid()
 }
 
 toggle.onclick=()=>{
   state.sliding=!state.sliding
-  toggle.classList.toggle("bg-indigo-600",state.sliding)
-  dot.style.transform = state.sliding ? "translateX(20px)" : "translateX(0px)"
+  if(state.sliding){
+    toggle.classList.remove("bg-slate-300")
+    toggle.classList.add("bg-indigo-600")
+    dot.style.transform="translateX(20px)"
+  }else{
+    toggle.classList.remove("bg-indigo-600")
+    toggle.classList.add("bg-slate-300")
+    dot.style.transform="translateX(0px)"
+  }
 }
 
 function renderGrid(){
   grid.innerHTML=""
-
   state.sequence.split("").forEach((aa,i)=>{
     let d=document.createElement("div")
     d.className="box border rounded text-center cursor-pointer flex flex-col justify-center"
-
     if(state.manualMask.has(i)) d.classList.add("bg-red-500","text-white")
 
     d.innerHTML=`${aa}<div class="text-xs">${i+1}</div>`
-
     d.onclick=()=>{
       state.manualMask.has(i)?state.manualMask.delete(i):state.manualMask.add(i)
       renderGrid()
     }
-
     grid.appendChild(d)
   })
 }
@@ -255,9 +241,7 @@ genBtn.onclick=()=>{
   }
 
   if(state.sliding){
-    let w=+win.value
-    let s=+step.value
-
+    let w=+win.value, s=+step.value
     for(let i=0;i<=state.sequence.length-w;i+=s){
       let arr=[...state.sequence]
       for(let j=0;j<w;j++) arr[i+j]="_"
@@ -285,7 +269,6 @@ function copy(btn,text){
 
 function renderList(){
   list.innerHTML=""
-
   state.library.forEach(seq=>{
     let row=document.createElement("div")
     row.className="flex justify-between bg-white p-2 rounded items-center"
@@ -315,9 +298,7 @@ function renderList(){
   })
 }
 
-copyAll.onclick=(e)=>{
-  copy(e.target, state.library.join("\n"))
-}
+copyAll.onclick=(e)=>copy(e.target,state.library.join("\n"))
 
 /* ================= MUT ================= */
 
@@ -331,28 +312,19 @@ const AA_TABLE={
   ATG:"M",AAA:"K",AAG:"K",GCT:"A",GCG:"A",TTG:"L",CTG:"L"
 }
 
-let codons=[]
-let mutations=[]
+let codons=[],mutations=[]
 
 function loadDNA(){
   let dna=dnaInput.value.toUpperCase().replace(/[^ATGC]/g,"")
-  codons=[]
-  mutations=[]
-
-  for(let i=0;i<dna.length;i+=3){
-    codons.push(dna.slice(i,i+3))
-  }
-
+  codons=[]; mutations=[]
+  for(let i=0;i<dna.length;i+=3) codons.push(dna.slice(i,i+3))
   renderMut()
 }
 
 function renderMut(){
-
   viewer.innerHTML=""
-
   codons.forEach((c,i)=>{
     let aa=AA_TABLE[c]||"X"
-
     let d=document.createElement("div")
     d.className="box border rounded text-center cursor-pointer flex flex-col justify-center"
 
@@ -361,7 +333,6 @@ function renderMut(){
     d.onclick=()=>{
       let newAA=prompt("Mutate to:")
       if(!newAA)return
-
       newAA=newAA.toUpperCase()
 
       let newCod=CODON[organism.value][newAA]
@@ -369,7 +340,6 @@ function renderMut(){
 
       mutations.push(`${aa}${i+1}${newAA}`)
       codons[i]=newCod
-
       renderMut()
     }
 
