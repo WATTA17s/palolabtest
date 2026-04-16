@@ -7,40 +7,16 @@
 
 <style>
 body{font-family:sans-serif}
-
-.tab{
-  padding:6px 14px;
-  border-radius:8px;
-  background:white;
-  cursor:pointer;
-}
-.tab.active{
-  background:#4f46e5;
-  color:white;
-}
-
+.tab{padding:6px 14px;border-radius:8px;background:white;cursor:pointer}
+.tab.active{background:#4f46e5;color:white}
 .box{
   width:64px;height:84px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   border-radius:12px;
 }
-
-.org{
-  padding:5px 12px;
-  border-radius:999px;
-  border:1px solid #ddd;
-  cursor:pointer;
-}
-.org.active{
-  background:#4f46e5;
-  color:white;
-}
-
-/* 🔥 สำคัญ */
-#dropdown{
-  pointer-events:none;
-}
+.org{padding:5px 12px;border-radius:999px;border:1px solid #ddd;cursor:pointer}
+.org.active{background:#4f46e5;color:white}
 </style>
 </head>
 
@@ -51,19 +27,16 @@ body{font-family:sans-serif}
 <h1 class="text-3xl mb-4">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-4">
-<div class="tab active" onclick="showTab('mask',this)">Masking</div>
-<div class="tab" onclick="showTab('mut',this)">Mutagenesis</div>
+<div class="tab active" onclick="switchTab('mask',this)">Masking</div>
+<div class="tab" onclick="switchTab('mut',this)">Mutagenesis</div>
 </div>
 
 <div class="bg-white p-6 rounded shadow">
 
 <!-- ================= MASK ================= -->
 <div id="mask">
-
 <input id="maskInput" class="w-full p-3 border rounded mb-3 text-center" placeholder="Protein">
-
 <div id="maskGrid" class="flex flex-wrap gap-2"></div>
-
 </div>
 
 <!-- ================= MUT ================= -->
@@ -81,6 +54,11 @@ body{font-family:sans-serif}
 <div id="dropdown"
 class="absolute hidden bg-white border rounded shadow p-2 text-sm z-50 max-h-80 overflow-y-auto"></div>
 
+<div class="mt-3">
+<div id="mutSummary" class="mb-2 text-sm"></div>
+<textarea id="outputDNA" class="w-full border p-2"></textarea>
+</div>
+
 </div>
 
 </div>
@@ -88,26 +66,22 @@ class="absolute hidden bg-white border rounded shadow p-2 text-sm z-50 max-h-80 
 
 <script>
 
-/* ================= TAB FIX ================= */
-function showTab(id,el){
+/* ================= TAB ================= */
+function switchTab(id,el){
+dropdown.classList.add("hidden")
 
-  // 🔥 ปิด dropdown ทุกครั้ง
-  dropdown.classList.add("hidden")
-  dropdown.style.pointerEvents="none"
+document.getElementById("mask").classList.add("hidden")
+document.getElementById("mut").classList.add("hidden")
 
-  document.getElementById("mask").classList.add("hidden")
-  document.getElementById("mut").classList.add("hidden")
+document.getElementById(id).classList.remove("hidden")
 
-  document.getElementById(id).classList.remove("hidden")
-
-  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
-  el.classList.add("active")
+document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"))
+el.classList.add("active")
 }
 
 /* ================= MASK ================= */
 maskInput.oninput=e=>{
 let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
-
 maskGrid.innerHTML=""
 
 seq.split("").forEach((a,i)=>{
@@ -121,6 +95,7 @@ maskGrid.appendChild(d)
 /* ================= MUT ================= */
 
 let org="ecoli"
+
 function setOrg(o,el){
 org=o
 document.querySelectorAll('.org').forEach(x=>x.classList.remove('active'))
@@ -157,7 +132,6 @@ Object.entries(AA_INFO).forEach(([aa,list])=>{
 list.forEach(c=>CODON_TO_AA[c]=aa)
 })
 
-/* 🔥 FULL TABLE */
 const CODON_USAGE = {
 ecoli:{TTT:0.58,TTC:0.42,TTA:0.13,TTG:0.13,CTT:0.11,CTC:0.10,CTA:0.04,CTG:0.49,ATT:0.50,ATC:0.40,ATA:0.09,ATG:1.00,GTT:0.26,GTC:0.21,GTA:0.16,GTG:0.37,TCT:0.14,TCC:0.15,TCA:0.14,TCG:0.15,AGT:0.16,AGC:0.27,CCT:0.17,CCC:0.13,CCA:0.19,CCG:0.51,ACT:0.17,ACC:0.41,ACA:0.15,ACG:0.27,GCT:0.16,GCC:0.27,GCA:0.22,GCG:0.35,TAT:0.57,TAC:0.43,CAT:0.58,CAC:0.42,CAA:0.33,CAG:0.67,AAT:0.47,AAC:0.53,AAA:0.76,AAG:0.24,GAT:0.63,GAC:0.37,GAA:0.68,GAG:0.32,TGT:0.45,TGC:0.55,TGG:1.00,CGT:0.36,CGC:0.37,CGA:0.07,CGG:0.11,AGA:0.05,AGG:0.03,GGT:0.33,GGC:0.39,GGA:0.12,GGG:0.16,TAA:0.59,TAG:0.08,TGA:0.33},
 pichia:{TTT:0.54,TTC:0.46,TTA:0.16,TTG:0.33,CTT:0.16,CTC:0.08,CTA:0.11,CTG:0.16,ATT:0.50,ATC:0.31,ATA:0.18,ATG:1.00,GTT:0.42,GTC:0.23,GTA:0.15,GTG:0.19,TCT:0.29,TCC:0.20,TCA:0.18,TCG:0.09,AGT:0.15,AGC:0.09,CCT:0.35,CCC:0.15,CCA:0.42,CCG:0.09,ACT:0.40,ACC:0.26,ACA:0.24,ACG:0.11,GCT:0.45,GCC:0.26,GCA:0.23,GCG:0.06,TAT:0.47,TAC:0.53,CAT:0.57,CAC:0.43,CAA:0.61,CAG:0.39,AAT:0.48,AAC:0.52,AAA:0.47,AAG:0.53,GAT:0.58,GAC:0.42,GAA:0.56,GAG:0.44,TGT:0.64,TGC:0.36,TGG:1.00,CGT:0.17,CGC:0.05,CGA:0.10,CGG:0.05,AGA:0.48,AGG:0.16,GGT:0.44,GGC:0.14,GGA:0.33,GGG:0.10,TAA:0.51,TAG:0.29,TGA:0.20}
@@ -182,24 +156,77 @@ render()
 }
 
 function render(){
+
 viewer.innerHTML=""
-let usage=CODON_USAGE[org]
 
 codons.forEach((c,i)=>{
 
 let aa=CODON_TO_AA[c]||"X"
-let f=usage[c]||0
+let isMut=mut.some(m=>m.pos===i)
 
 let d=document.createElement("div")
 d.className="box border cursor-pointer"
 
-if(f<0.1) d.classList.add("bg-red-200")
+if(isMut) d.classList.add("bg-yellow-200")
 
 d.innerHTML=`<div>${i+1}</div><b>${aa}</b><div>${c}</div>`
 
+d.onclick=(e)=>{
+e.stopPropagation()
+openDD(e,i,d)
+}
+
 viewer.appendChild(d)
 })
+
+outputDNA.value=codons.join("")
+mutSummary.innerText=mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(" ")
 }
+
+/* dropdown */
+function openDD(e,i,box){
+
+dropdown.innerHTML=""
+dropdown.classList.remove("hidden")
+
+Object.entries(AA_INFO).forEach(([aa,list])=>{
+let g=document.createElement("div")
+g.innerHTML=`<b>${aa}</b>`
+
+list.forEach(c=>{
+let row=document.createElement("div")
+row.className="cursor-pointer hover:bg-slate-100"
+row.innerText=c
+
+row.onclick=()=>{
+apply(i,c)
+dropdown.classList.add("hidden")
+}
+
+g.appendChild(row)
+})
+
+dropdown.appendChild(g)
+})
+
+let r=box.getBoundingClientRect()
+dropdown.style.left=r.right+"px"
+dropdown.style.top=r.top+"px"
+}
+
+function apply(i,c){
+let old=orig[i]
+let nw=CODON_TO_AA[c]
+
+if(old!==nw){
+mut.push({pos:i,from:old,to:nw})
+}
+
+codons[i]=c
+render()
+}
+
+document.addEventListener("click",()=>dropdown.classList.add("hidden"))
 
 </script>
 
