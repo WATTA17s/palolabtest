@@ -11,7 +11,7 @@ body{font-family:sans-serif}
 .nav-btn.active{background:#4f46e5;color:white}
 
 .box{
-  width:64px;height:78px;
+  width:64px;height:80px;
   display:flex;flex-direction:column;
   align-items:center;justify-content:center;
   border-radius:12px;
@@ -26,37 +26,16 @@ body{font-family:sans-serif}
 <h1 class="text-3xl font-semibold mb-6">🧬 Pa1oLAB</h1>
 
 <div class="flex gap-2 mb-6">
-<button class="nav-btn active" onclick="switchPage(event,'align')">Alignment</button>
-<button class="nav-btn" onclick="switchPage(event,'mask')">Masking</button>
+<button class="nav-btn active" onclick="switchPage(event,'mask')">Masking</button>
 <button class="nav-btn" onclick="switchPage(event,'mut')">Mutagenesis</button>
 </div>
 
 <div class="bg-white p-6 rounded-xl shadow">
 
-<!-- ================= ALIGN ================= -->
-<div id="align">
-<textarea id="alignInput" class="w-full p-3 border rounded font-mono mb-4"></textarea>
-<button onclick="runAlign()" class="bg-indigo-600 text-white px-4 py-2 rounded">Align</button>
-<div id="alignOut" class="mt-4 font-mono text-sm"></div>
-</div>
-
 <!-- ================= MASK ================= -->
-<div id="mask" class="hidden">
+<div id="mask">
 
 <input id="maskInput" class="w-full p-3 border rounded font-mono mb-4 text-center" placeholder="Protein sequence">
-
-<div class="flex justify-center gap-3 mb-3">
-<span>Sliding</span>
-<div id="toggle" class="w-10 h-5 bg-slate-300 rounded-full cursor-pointer relative">
-<div id="dot" class="w-4 h-4 bg-white rounded-full absolute top-0.5 left-0.5 transition"></div>
-</div>
-</div>
-
-<div class="flex justify-center gap-2 mb-4">
-<input id="win" type="number" value="5" class="w-16 border text-center rounded">
-<input id="step" type="number" value="1" class="w-16 border text-center rounded">
-<button id="genBtn" class="bg-indigo-600 text-white px-4 rounded">Generate</button>
-</div>
 
 <div id="grid" class="flex flex-wrap gap-2 justify-center"></div>
 
@@ -73,9 +52,7 @@ body{font-family:sans-serif}
 
 <div id="dropdown" class="absolute hidden bg-white border rounded-xl shadow-lg p-3 text-sm z-[9999] max-h-96 overflow-y-auto"></div>
 
-<!-- OUTPUT -->
 <div class="mt-6">
-
 <div class="text-sm mb-1 text-slate-500">Mutations</div>
 <div id="mutSummary" class="flex flex-wrap gap-2 mb-3"></div>
 
@@ -85,7 +62,6 @@ body{font-family:sans-serif}
 <button onclick="copyDNA()" class="mt-2 bg-green-600 text-white px-3 py-1 rounded">
 Copy DNA
 </button>
-
 </div>
 
 </div>
@@ -97,72 +73,83 @@ Copy DNA
 
 /* NAV */
 function switchPage(e,id){
-document.querySelectorAll("#align,#mask,#mut").forEach(x=>x.classList.add("hidden"))
+document.querySelectorAll("#mask,#mut").forEach(x=>x.classList.add("hidden"))
 document.getElementById(id).classList.remove("hidden")
 document.querySelectorAll(".nav-btn").forEach(b=>b.classList.remove("active"))
 e.target.classList.add("active")
 }
 
 /* ================= MASK ================= */
-let state={sequence:"",mask:new Set(),sliding:false}
-
 maskInput.oninput=e=>{
-state.sequence=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
-renderMask()
-}
-
-toggle.onclick=()=>{
-state.sliding=!state.sliding
-toggle.classList.toggle("bg-indigo-600",state.sliding)
-dot.style.transform=state.sliding?"translateX(20px)":"translateX(0)"
-}
-
-function renderMask(){
+let seq=e.target.value.toUpperCase().replace(/[^A-Z]/g,"")
 grid.innerHTML=""
-state.sequence.split("").forEach((aa,i)=>{
+seq.split("").forEach((aa,i)=>{
 let d=document.createElement("div")
-d.className="box border cursor-pointer"
-if(state.mask.has(i))d.classList.add("bg-red-500","text-white")
-
-d.innerHTML=`
-<div class="text-xs">${i+1}</div>
-<div class="text-lg">${aa}</div>
-`
-
-d.onclick=()=>{
-state.mask.has(i)?state.mask.delete(i):state.mask.add(i)
-renderMask()
-}
-
+d.className="box border"
+d.innerHTML=`<div>${i+1}</div><b>${aa}</b>`
 grid.appendChild(d)
 })
 }
 
 /* ================= MUT ================= */
 
-const CODON_TABLE_FULL = {
-A:["GCT","GCC","GCA","GCG"],
-K:["AAA","AAG"],
-L:["TTA","TTG","CTG"],
-M:["ATG"],
-F:["TTT","TTC"]
-}
-
-const CODON_USAGE={
-GCT:0.16,GCC:0.27,GCA:0.22,GCG:0.35,
-AAA:0.76,AAG:0.24,
-TTT:0.58,TTC:0.42,
-CTG:0.49
+const AA_INFO={
+A:{name:"Alanine",codons:["GCT","GCC","GCA","GCG"]},
+R:{name:"Arginine",codons:["CGT","CGC","CGA","CGG","AGA","AGG"]},
+N:{name:"Asparagine",codons:["AAT","AAC"]},
+D:{name:"Aspartic Acid",codons:["GAT","GAC"]},
+C:{name:"Cysteine",codons:["TGT","TGC"]},
+Q:{name:"Glutamine",codons:["CAA","CAG"]},
+E:{name:"Glutamic Acid",codons:["GAA","GAG"]},
+G:{name:"Glycine",codons:["GGT","GGC","GGA","GGG"]},
+H:{name:"Histidine",codons:["CAT","CAC"]},
+I:{name:"Isoleucine",codons:["ATT","ATC","ATA"]},
+L:{name:"Leucine",codons:["TTA","TTG","CTT","CTC","CTA","CTG"]},
+K:{name:"Lysine",codons:["AAA","AAG"]},
+M:{name:"Methionine",codons:["ATG"]},
+F:{name:"Phenylalanine",codons:["TTT","TTC"]},
+P:{name:"Proline",codons:["CCT","CCC","CCA","CCG"]},
+S:{name:"Serine",codons:["TCT","TCC","TCA","TCG","AGT","AGC"]},
+T:{name:"Threonine",codons:["ACT","ACC","ACA","ACG"]},
+W:{name:"Tryptophan",codons:["TGG"]},
+Y:{name:"Tyrosine",codons:["TAT","TAC"]},
+V:{name:"Valine",codons:["GTT","GTC","GTA","GTG"]}
 }
 
 const CODON_TO_AA={}
-for(let aa in CODON_TABLE_FULL){
-CODON_TABLE_FULL[aa].forEach(c=>CODON_TO_AA[c]=aa)
-}
+Object.entries(AA_INFO).forEach(([aa,obj])=>{
+obj.codons.forEach(c=>CODON_TO_AA[c]=aa)
+})
+
+/* FULL USAGE */
+const CODON_USAGE={ ecoli:{
+TTT:0.58,TTC:0.42,TTA:0.13,TTG:0.13,
+CTT:0.11,CTC:0.10,CTA:0.04,CTG:0.49,
+ATT:0.50,ATC:0.40,ATA:0.09,ATG:1.00,
+GTT:0.26,GTC:0.21,GTA:0.16,GTG:0.37,
+TCT:0.14,TCC:0.15,TCA:0.14,TCG:0.15,
+AGT:0.16,AGC:0.27,
+CCT:0.17,CCC:0.13,CCA:0.19,CCG:0.51,
+ACT:0.17,ACC:0.41,ACA:0.15,ACG:0.27,
+GCT:0.16,GCC:0.27,GCA:0.22,GCG:0.35,
+TAT:0.57,TAC:0.43,
+CAT:0.58,CAC:0.42,
+CAA:0.33,CAG:0.67,
+AAT:0.47,AAC:0.53,
+AAA:0.76,AAG:0.24,
+GAT:0.63,GAC:0.37,
+GAA:0.68,GAG:0.32,
+TGT:0.45,TGC:0.55,
+TGG:1.00,
+CGT:0.36,CGC:0.37,CGA:0.07,CGG:0.11,
+AGA:0.05,AGG:0.03,
+GGT:0.33,GGC:0.39,GGA:0.12,GGG:0.16,
+TAA:0.59,TAG:0.08,TGA:0.33
+}}
 
 let codons=[], originalAA=[], mutations=[]
 
-document.getElementById("loadBtn").addEventListener("click",loadDNA)
+document.getElementById("loadBtn").onclick=loadDNA
 
 function loadDNA(){
 let dna=dnaInput.value.toUpperCase().replace(/[^ATGC]/g,"")
@@ -181,13 +168,21 @@ renderMut()
 }
 
 function renderMut(){
+
 viewer.innerHTML=""
 
 codons.forEach((c,i)=>{
+
 let aa=CODON_TO_AA[c]||"X"
+let freq=CODON_USAGE.ecoli[c]||0
 
 let d=document.createElement("div")
-d.className="box border bg-white hover:bg-slate-100 cursor-pointer"
+
+/* 🔴 rare codon */
+let isRare = freq < 0.1
+
+d.className=`box border cursor-pointer 
+${isRare ? "bg-red-200" : "bg-white hover:bg-slate-100"}`
 
 d.innerHTML=`
 <div class="text-xs">${i+1}</div>
@@ -201,29 +196,32 @@ openDropdown(e,i)
 }
 
 viewer.appendChild(d)
+
 })
 
 updateOutput()
 }
 
-/* NEW DROPDOWN */
+/* DROPDOWN */
 function openDropdown(e,i){
 
 dropdown.innerHTML=""
 
-Object.keys(CODON_TABLE_FULL).forEach(aa=>{
+let usage=CODON_USAGE.ecoli
+
+Object.entries(AA_INFO).forEach(([aa,info])=>{
 
 let group=document.createElement("div")
-group.className="mb-2"
+group.className="mb-3"
 
-group.innerHTML=`<div class="font-bold text-slate-600">${aa}</div>`
+group.innerHTML=`<div class="text-xs font-semibold text-slate-600">${info.name} (${aa})</div>`
 
-let list=[...CODON_TABLE_FULL[aa]]
-list.sort((a,b)=>(CODON_USAGE[b]||0)-(CODON_USAGE[a]||0))
+let codList=[...info.codons]
+codList.sort((a,b)=>(usage[b]||0)-(usage[a]||0))
 
-list.forEach((c,idx)=>{
+codList.forEach((c,idx)=>{
 
-let freq=CODON_USAGE[c]||0
+let freq=usage[c]||0
 
 let row=document.createElement("div")
 row.className="flex justify-between px-2 py-1 rounded cursor-pointer hover:bg-slate-100"
@@ -231,7 +229,7 @@ row.className="flex justify-between px-2 py-1 rounded cursor-pointer hover:bg-sl
 if(idx===0) row.classList.add("bg-green-100")
 
 row.innerHTML=`
-<span>${c}</span>
+<span class="font-mono">${c}</span>
 <span class="text-xs text-slate-500">${freq.toFixed(2)}</span>
 `
 
@@ -241,6 +239,7 @@ dropdown.classList.add("hidden")
 }
 
 group.appendChild(row)
+
 })
 
 dropdown.appendChild(group)
