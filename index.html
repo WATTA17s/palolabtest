@@ -83,56 +83,63 @@ font-weight:600;
 <div class="bg-white p-6 rounded shadow">
 
 <!-- MASK -->
+<!-- 🔥 MASK CARD -->
+<div class="bg-white p-6 rounded shadow">
+
 <div id="mask">
+
 <input id="maskInput"
 class="w-full p-3 border rounded mb-3 text-center"
 placeholder="Protein (1-letter)">
 
-<!-- 🔥 MODE TOGGLE -->
-<div class="flex bg-gray-100 rounded-xl p-1 w-fit mx-auto mb-3">
-
-<div id="modeManual"
-class="org active"
-onclick="setMode('manual',this)">
-Manual
+<!-- MODE -->
+<div class="flex bg-gray-100 rounded-xl p-1 w-fit mx-auto mb-4">
+  <div id="modeManual" class="org active" onclick="setMode('manual',this)">Manual</div>
+  <div id="modeSliding" class="org" onclick="setMode('sliding',this)">Sliding</div>
 </div>
 
-<div id="modeSliding"
-class="org"
-onclick="setMode('sliding',this)">
-Sliding
-</div>
+<!-- CONTROLS -->
+<div class="flex items-end justify-center gap-4 mb-5">
 
-</div>
+  <div class="flex flex-col items-center">
+    <span class="text-xs text-gray-400 mb-1">Window</span>
+    <input id="win" value="5"
+    class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
+    focus:ring-2 focus:ring-indigo-400 outline-none">
+  </div>
 
-<div class="flex items-center justify-center gap-3 mb-4">
+  <div class="flex flex-col items-center">
+    <span class="text-xs text-gray-400 mb-1">Step</span>
+    <input id="step" value="1"
+    class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
+    focus:ring-2 focus:ring-indigo-400 outline-none">
+  </div>
 
-<!-- window -->
-<div class="flex flex-col items-center">
-<span class="text-xs text-gray-400 mb-1">Window</span>
-<input id="win" value="5"
-class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
-focus:ring-2 focus:ring-indigo-400 outline-none">
-</div>
-
-<!-- step -->
-<div class="flex flex-col items-center">
-<span class="text-xs text-gray-400 mb-1">Step</span>
-<input id="step" value="1"
-class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
-focus:ring-2 focus:ring-indigo-400 outline-none">
-</div>
-
-<!-- button -->
-<button onclick="handleGenerate()"
-class="ml-2 bg-indigo-600 text-white px-5 py-2 rounded-xl
-hover:bg-indigo-700 active:scale-95 transition shadow-md font-medium">
-Generate
-</button>
+  <button onclick="handleGenerate()"
+  class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl
+  hover:bg-indigo-700 active:scale-95 transition
+  shadow-md font-medium">
+  Generate
+  </button>
 
 </div>
 
-<!-- RIGHT: copy -->
+<!-- GRID -->
+<div id="maskGrid" class="flex flex-wrap gap-3 justify-center"></div>
+
+<!-- OUTPUT -->
+<div id="maskLib"
+class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-auto">
+</div>
+
+<!-- COPY -->
+<div class="mt-3 flex justify-between items-center">
+
+<span id="copyToast"
+class="text-xs text-green-600 opacity-0 transition">
+Copied ✓
+</span>
+
 <button onclick="handleCopy()"
 class="text-sm px-4 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition shadow-sm">
 Copy All
@@ -140,25 +147,7 @@ Copy All
 
 </div>
 
-<!-- 🔥 Sliding controls -->
-
-
-<div id="maskGrid" class="flex flex-wrap gap-3 justify-center"></div>
-
-<!-- 🔥 OUTPUT LIB -->
-<div id="maskLib"
-class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-auto">
 </div>
-
-<!-- 🔥 ACTION BAR -->
-<div class="mt-2 text-right">
-<span id="copyToast"
-class="text-xs text-green-600 opacity-0 transition">
-Copied ✓
-</span>
-</div>
-
-</div> <!-- 🔥 ปิด MASK ให้ถูก -->
 </div>
 <!-- MUT -->
 <div id="mut" class="hidden">
@@ -432,6 +421,15 @@ document.querySelectorAll("#modeManual,#modeSliding")
 .forEach(x=>x.classList.remove("active"))
 
 el.classList.add("active")
+
+// 🔥 FIX: regenerate ตาม mode
+if(library.length){
+  if(maskMode === "manual"){
+    generateManualMask()
+  }else{
+    generateMask()
+  }
+}
 
 }
 
