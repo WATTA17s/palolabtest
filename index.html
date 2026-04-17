@@ -169,6 +169,10 @@ Export
 <button id="backupBtn" onclick="backupData()"
 class="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition flex items-center gap-2">
 
+<!-- spinner -->
+<span id="backupSpinner" class="hidden animate-spin">⏳</span>
+
+<!-- text -->
 <span id="backupText">Backup</span>
 
 </button>
@@ -527,9 +531,11 @@ async function backupData(){
 
 let btn = document.getElementById("backupBtn")
 let text = document.getElementById("backupText")
+let spinner = document.getElementById("backupSpinner")
 
 // 🔥 start loading
 btn.classList.add("opacity-60","cursor-wait")
+spinner.classList.remove("hidden")
 text.innerHTML = "Saving..."
 
 let name=document.getElementById("seqName").innerText.trim()
@@ -545,6 +551,7 @@ body: JSON.stringify({name,sequence,mutations})
 })
 
 // ✅ finish
+spinner.classList.add("hidden")
 text.innerHTML = "Saved ✓"
 btn.classList.remove("opacity-60","cursor-wait")
 
