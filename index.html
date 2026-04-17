@@ -105,14 +105,28 @@ Sliding
 
 </div>
 
-<div class="flex gap-2 mb-3 justify-center">
+<div class="flex items-center justify-between mb-3">
 
-<input id="win" value="5" class="w-16 border text-center">
-<input id="step" value="1" class="w-16 border text-center">
+<!-- LEFT: controls -->
+<div class="flex gap-2 items-center">
+
+<input id="win" value="5"
+class="w-16 px-2 py-1 border rounded-lg text-center focus:ring-2 focus:ring-indigo-400 outline-none">
+
+<input id="step" value="1"
+class="w-16 px-2 py-1 border rounded-lg text-center focus:ring-2 focus:ring-indigo-400 outline-none">
 
 <button onclick="handleGenerate()"
-class="bg-indigo-600 text-white px-3 rounded">
+class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm">
 Generate
+</button>
+
+</div>
+
+<!-- RIGHT: copy -->
+<button onclick="handleCopy()"
+class="text-sm px-4 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition shadow-sm">
+Copy All
 </button>
 
 </div>
@@ -128,17 +142,12 @@ class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-
 </div>
 
 <!-- 🔥 ACTION BAR -->
-<div class="flex justify-between items-center mt-2">
-
-<button onclick="handleCopy()"
-class="text-sm px-3 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition">
-Copy All
-</button>
-
+<div class="mt-2 text-right">
 <span id="copyToast"
 class="text-xs text-green-600 opacity-0 transition">
 Copied ✓
 </span>
+</div>
 
 </div> <!-- 🔥 ปิด MASK ให้ถูก -->
 </div>
