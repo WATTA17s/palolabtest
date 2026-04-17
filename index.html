@@ -80,7 +80,6 @@ font-weight:600;
 <div class="tab" onclick="switchTab('mut',this)">Mutagenesis</div>
 </div>
 
-<div class="bg-white p-6 rounded shadow">
 
 <!-- MASK -->
 <!-- 🔥 MASK CARD -->
@@ -149,6 +148,7 @@ Copy All
 
 </div>
 </div>
+  
 <!-- MUT -->
 <div id="mut" class="hidden">
 
@@ -422,13 +422,9 @@ document.querySelectorAll("#modeManual,#modeSliding")
 
 el.classList.add("active")
 
-// 🔥 FIX: regenerate ตาม mode
-if(library.length){
-  if(maskMode === "manual"){
-    generateManualMask()
-  }else{
-    generateMask()
-  }
+// 🔥 FIX: ไม่ให้ library หาย
+if(maskSeq){
+  handleGenerate()
 }
 
 }
