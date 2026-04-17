@@ -20,6 +20,10 @@ justify-content:space-between;
 border-radius:14px;
 line-height:1.1;
 }
+.box:hover{
+transform:translateY(-2px);
+transition:0.15s;
+}
 .tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
 .org{padding:4px 10px;border-radius:999px;border:1px solid #ddd;cursor:pointer}
@@ -75,7 +79,7 @@ data-placeholder="Enter sequence name">
 
 <textarea id="dnaInput" class="w-full p-3 border rounded mb-3" placeholder="DNA sequence"></textarea>
 
-<div id="viewer" class="flex flex-wrap gap-2"></div>
+<div id="viewer" class="flex flex-wrap gap-3"></div>
 
 <div id="dropdown" class="hidden bg-white border rounded shadow p-3 text-sm max-h-80 overflow-y-auto"></div>
 
@@ -279,10 +283,13 @@ if(mut.some(m=>m.pos===i)){
 }
 
 d.innerHTML=`
-<div>${i+1}</div>
-<b>${aa}</b>
-<div>${c}</div>
-<div class="text-[10px] opacity-70">${current.toFixed(2)}</div>
+<div class="text-[11px] opacity-60">${i+1}</div>
+
+<div class="text-lg font-semibold">${aa}</div>
+
+<div class="text-xs tracking-wide">${c}</div>
+
+<div class="text-[10px] opacity-50">${current.toFixed(2)}</div>
 `
 
 d.onclick=e=>{e.stopPropagation();openDD(e,i,d)}
