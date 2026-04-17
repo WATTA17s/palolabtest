@@ -64,16 +64,37 @@ transition:0.15s;
 <div class="flex flex-wrap gap-2 mb-3" id="orgButtons"></div>
 
 <!-- 🔥 NAME FORMAT -->
-<div class="mb-3">
-<div class="flex gap-2 mb-1">
-<button onclick="formatText('bold')" class="px-2 border rounded font-bold">B</button>
-<button onclick="formatText('italic')" class="px-2 border rounded italic">I</button>
+<div class="mb-4">
+
+<!-- label -->
+<div class="text-sm font-semibold text-gray-600 mb-1">
+Sequence Name
 </div>
 
+<!-- container -->
+<div class="flex items-center gap-2 bg-white border rounded-xl px-3 py-2 shadow-sm focus-within:ring-2 focus-within:ring-indigo-400">
+
+<!-- input -->
 <div id="seqName"
 contenteditable="true"
-class="border px-3 py-2 rounded w-64 bg-white empty:text-gray-400"
-data-placeholder="Enter sequence name">
+data-placeholder="Enter sequence name..."
+class="flex-1 outline-none text-sm"></div>
+
+<!-- toolbar -->
+<div class="flex gap-1 border-l pl-2">
+
+<button onclick="formatText('bold')"
+class="px-2 py-1 rounded hover:bg-gray-100 font-bold">
+B
+</button>
+
+<button onclick="formatText('italic')"
+class="px-2 py-1 rounded hover:bg-gray-100 italic">
+I
+</button>
+
+</div>
+
 </div>
 </div>
 
