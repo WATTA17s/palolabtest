@@ -206,10 +206,20 @@ Copy All
 <!-- MUT -->
 <div id="mut" class="hidden bg-white p-6 rounded shadow">
 
-<div class="mb-4">
-<div id="orgButtons"
-class="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit shadow-inner">
-</div>
+<div class="mb-4 flex items-center gap-4">
+
+  <!-- organism -->
+  <div id="orgButtons"
+  class="flex gap-1 bg-gray-100 rounded-xl p-1 w-fit shadow-inner">
+  </div>
+
+  <!-- 🔥 cutoff -->
+  <div class="flex flex-col items-center">
+    <span class="text-xs text-gray-400 mb-1">Rare cutoff</span>
+    <input id="cutoff" value="0.15"
+    class="w-20 px-2 py-1 border rounded text-center">
+  </div>
+
 </div>
 
 <!-- 🔥 NAME FORMAT -->
@@ -588,8 +598,10 @@ if(rank === 0){
 }
 
 // 🔴 rare
-if(rank === sorted.length-1 && current < 0.15){
-  d.classList.add("bg-red-200")
+let cutoff = parseFloat(document.getElementById("cutoff").value) || 0.15
+
+if(idx === sorted.length-1 && val < cutoff){
+  row.classList.add("bg-red-100")
 }
 
 // 🟡 mutated
@@ -671,8 +683,10 @@ if(idx === 0){
 }
 
 // 🔴 rare
-if(idx === sorted.length-1 && val < 0.15){
-  row.classList.add("bg-red-100")
+let cutoff = parseFloat(document.getElementById("cutoff").value) || 0.15
+
+if(rank === sorted.length-1 && current < cutoff){
+  d.classList.add("bg-red-200")
 }
 
 row.innerHTML=`
@@ -812,6 +826,7 @@ function login(){
   }
 
 }
+  document.getElementById("cutoff").oninput = () => render()
 </script>
 
 </body>
