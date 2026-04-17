@@ -25,17 +25,19 @@ transform:translateY(-2px);
 transition:0.15s;
 }
 .mask-box{
-width:72px;
-height:88px;
-padding:6px;
+width:60px;
+height:76px;
+padding:4px;
 
 display:flex;
 flex-direction:column;
 align-items:center;
-justify-content:space-between;
+justify-content:center;
 
-border-radius:16px;
-line-height:1.1;
+gap:4px;
+
+border-radius:14px;
+font-size:13px;
 }
 .tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
@@ -119,7 +121,7 @@ Generate
 
 <!-- 🔥 Copy -->
 <div class="flex justify-center mb-3">
-<button onclick="copyMask()"
+<button onclick="handleCopy()"
 class="bg-green-600 text-white px-4 py-1 rounded">
 Copy Library
 </button>
@@ -296,6 +298,8 @@ grid.appendChild(d)
 
 }
 
+/* ================= MASK LOGIC ================= */
+
 function generateMask(){
 
 library=[]
@@ -309,14 +313,68 @@ for(let j=0;j<w;j++) arr[i+j]="_"
 library.push(arr.join(""))
 }
 
+// render
 document.getElementById("maskLib").innerHTML =
-library.map(x=>`<div>${x}</div>`).join("")
+library.map(x=>`
+<div class="flex justify-between items-center px-2 py-1 hover:bg-gray-100 rounded">
+
+<span>${x}</span>
+
+<button onclick="copyOne('${x}')"
+class="text-xs text-gray-400 hover:text-black">
+copy
+</button>
+
+</div>
+`).join("")
 
 }
 
+function generateManualMask(){
 
-function copyMask(){
+library=[]
+
+let arr=[...maskSeq]
+
+maskSet.forEach(i=>{
+arr[i]="_"
+})
+
+library.push(arr.join(""))
+
+document.getElementById("maskLib").innerHTML =
+library.map(x=>`
+<div class="flex justify-between items-center px-2 py-1 hover:bg-gray-100 rounded">
+
+<span>${x}</span>
+
+<button onclick="copyOne('${x}')"
+class="text-xs text-gray-400 hover:text-black">
+copy
+</button>
+
+</div>
+`).join("")
+
+}
+
+function handleCopy(){
+
+if(maskMode==="manual"){
+generateManualMask()
+}
+
+if(!library.length){
+alert("No library")
+return
+}
+
 navigator.clipboard.writeText(library.join("\n"))
+
+}
+
+function copyOne(seq){
+navigator.clipboard.writeText(seq)
 }
   /* ================= MASK ================= */
 
