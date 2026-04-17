@@ -24,6 +24,19 @@ line-height:1.1;
 transform:translateY(-2px);
 transition:0.15s;
 }
+.mask-box{
+width:72px;
+height:88px;
+padding:6px;
+
+display:flex;
+flex-direction:column;
+align-items:center;
+justify-content:space-between;
+
+border-radius:16px;
+line-height:1.1;
+}
 .tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
 .org{
@@ -69,16 +82,54 @@ font-weight:600;
 
 <!-- MASK -->
 <div id="mask">
-<input id="maskInput" class="w-full p-3 border rounded mb-3 text-center" placeholder="Protein (1-letter)">
-<div class="flex gap-2 mb-3 justify-center">
-<input id="win" value="5" class="w-16 border text-center">
-<input id="step" value="1" class="w-16 border text-center">
-<button onclick="generateMask()" class="bg-indigo-600 text-white px-3 rounded">Sliding</button>
-<button onclick="copyMask()" class="bg-green-600 text-white px-3 rounded">Copy</button>
+<input id="maskInput"
+class="w-full p-3 border rounded mb-3 text-center"
+placeholder="Protein (1-letter)">
+
+<!-- 🔥 MODE TOGGLE -->
+<div class="flex justify-center gap-2 mb-3">
+
+<div id="modeManual"
+class="tab active"
+onclick="setMode('manual',this)">
+Manual
 </div>
 
-<div id="maskGrid" class="flex flex-wrap gap-2"></div>
-<div id="maskLib" class="mt-4 flex flex-wrap gap-2"></div>
+<div id="modeSliding"
+class="tab"
+onclick="setMode('sliding',this)">
+Sliding
+</div>
+
+</div>
+
+<!-- 🔥 Sliding controls -->
+<div id="slidingControls"
+class="flex gap-2 mb-3 justify-center hidden">
+
+<input id="win" value="5" class="w-16 border text-center">
+<input id="step" value="1" class="w-16 border text-center">
+
+<button onclick="generateMask()"
+class="bg-indigo-600 text-white px-3 rounded">
+Generate
+</button>
+
+</div>
+
+<!-- 🔥 Copy -->
+<div class="flex justify-center mb-3">
+<button onclick="copyMask()"
+class="bg-green-600 text-white px-4 py-1 rounded">
+Copy Library
+</button>
+</div>
+
+<div id="maskGrid" class="flex flex-wrap gap-3 justify-center"></div>
+
+<!-- 🔥 OUTPUT LIB -->
+<div id="maskLib"
+class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-auto">
 </div>
 
 <!-- MUT -->
@@ -209,31 +260,44 @@ renderMask()
 }
 
 function renderMask(){
+
 let grid=document.getElementById("maskGrid")
 grid.innerHTML=""
 
 maskSeq.split("").forEach((a,i)=>{
-let d=document.createElement("div")
-d.className="box border cursor-pointer transition"
 
+let d=document.createElement("div")
+d.className="mask-box border cursor-pointer transition"
+
+// 🔥 สี
 if(maskSet.has(i)){
-d.classList.add("bg-red-500","text-white","scale-110")
+d.classList.add("bg-red-500","text-white","scale-105")
 }else{
 d.classList.add("bg-white")
 }
 
-d.innerHTML=`<div class="text-xs">${i+1}</div><b>${a}</b>`
+// 🔥 layout ใหม่
+d.innerHTML=`
+<div class="text-xs opacity-60">${i+1}</div>
+<div class="text-lg font-semibold">${a}</div>
+`
+
+// 🔥 click
 d.onclick=()=>{
 maskSet.has(i)?maskSet.delete(i):maskSet.add(i)
 renderMask()
 }
 
 grid.appendChild(d)
+
 })
+
 }
 
 function generateMask(){
+
 library=[]
+
 let w=+document.getElementById("win").value
 let s=+document.getElementById("step").value
 
@@ -243,10 +307,35 @@ for(let j=0;j<w;j++) arr[i+j]="_"
 library.push(arr.join(""))
 }
 
+// 🔥 render สวยขึ้น
+document.getElementById("maskLib").innerHTML =
+library.map(x=>`<div>${x}</div>`).join("")
+
+}
+
 document.getElementById("maskLib").innerHTML=library.join("<br>")
 }
 
-function copyMask(){navigator.clipboard.writeText(library.join("\n"))}
+function copyMask(){
+navigator.clipboard.writeText(library.join("\n"))
+}
+  /* ================= MASK ================= */
+
+let maskMode = "manual"
+
+function setMode(mode,el){
+
+maskMode = mode
+
+document.querySelectorAll("#modeManual,#modeSliding")
+.forEach(x=>x.classList.remove("active"))
+
+el.classList.add("active")
+
+document.getElementById("slidingControls")
+.classList.toggle("hidden", mode !== "sliding")
+
+}
 
 /* ================= FORMAT ================= */
 function formatText(cmd){
