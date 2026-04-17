@@ -39,8 +39,21 @@ gap:4px;
 border-radius:14px;
 font-size:13px;
 }
-.tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
-.tab.active{background:#4f46e5;color:white}
+.tab{
+cursor:pointer;
+color:#555;
+transition:all 0.2s ease;
+}
+
+.tab.active{
+background:#4f46e5;
+color:white;
+box-shadow:0 2px 8px rgba(0,0,0,0.15);
+}
+
+.tab:hover{
+color:black;
+}
 .org{
 padding:6px 16px;
 border-radius:10px;
@@ -72,12 +85,32 @@ font-weight:600;
 
 <body class="bg-slate-100 p-6">
 
-<div class="max-w-6xl mx-auto">
-<h1 class="text-3xl mb-4">🧬 Pa1oLAB</h1>
+<div class="flex items-center justify-between mb-6">
 
-<div class="flex gap-2 mb-4">
-<div class="tab active" onclick="switchTab('mask',this)">Masking</div>
-<div class="tab" onclick="switchTab('mut',this)">Mutagenesis</div>
+  <!-- LEFT: LOGO -->
+  <div class="flex items-center gap-3">
+    <div class="text-3xl">🧬</div>
+    <div>
+      <div class="text-2xl font-semibold tracking-tight">Pa1oLAB</div>
+      <div class="text-xs text-gray-400 -mt-1">Protein Engineering Toolkit</div>
+    </div>
+  </div>
+
+  <!-- RIGHT: TAB -->
+  <div class="flex bg-gray-100 p-1 rounded-xl shadow-inner">
+
+    <div class="tab active px-4 py-2 rounded-lg text-sm font-medium"
+      onclick="switchTab('mask',this)">
+      Masking
+    </div>
+
+    <div class="tab px-4 py-2 rounded-lg text-sm font-medium"
+      onclick="switchTab('mut',this)">
+      Mutagenesis
+    </div>
+
+  </div>
+
 </div>
 
 
