@@ -467,7 +467,9 @@ alert("No library")
 return
 }
 
-navigator.clipboard.writeText(library.join(", "))
+navigator.clipboard.writeText(
+  library.map(seq => `"${seq}"`).join(", ")
+)
 
 // 🔥 animation
 let toast = document.getElementById("copyToast")
