@@ -132,6 +132,8 @@ Copy Library
 class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-auto">
 </div>
 
+</div> <!-- 🔥 ปิด MASK ให้ถูก -->
+
 <!-- MUT -->
 <div id="mut" class="hidden">
 
@@ -307,7 +309,6 @@ for(let j=0;j<w;j++) arr[i+j]="_"
 library.push(arr.join(""))
 }
 
-// 🔥 render สวยขึ้น
 document.getElementById("maskLib").innerHTML =
 library.map(x=>`<div>${x}</div>`).join("")
 
