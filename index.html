@@ -157,18 +157,29 @@ class="font-mono text-sm bg-gray-50 border rounded-lg p-3 break-all leading-rela
 
 </div>
 
-<!-- ⚡ Action Bar -->
-<div class="mt-4 flex gap-3">
+<div class="mt-4 flex items-center justify-between">
+
+<!-- hint -->
+<div class="text-xs text-gray-400">
+Export or save your sequence
+</div>
+
+<!-- buttons -->
+<div class="flex gap-2">
 
 <button onclick="exportWord()"
-class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition">
-📄 Export
+class="px-4 py-2 rounded-lg border text-gray-700 hover:bg-gray-100 transition">
+Export
 </button>
 
 <button id="backupBtn" onclick="backupData()"
-class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition">
-☁️ Backup
+class="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition flex items-center gap-2">
+
+<span id="backupText">Backup</span>
+
 </button>
+
+</div>
 
 </div>
 
@@ -520,23 +531,33 @@ URL.revokeObjectURL(url)
 /* ================= BACKUP ================= */
 async function backupData(){
 
+let btn = document.getElementById("backupBtn")
+let text = document.getElementById("backupText")
+
+// 🔥 start loading
+btn.classList.add("opacity-60","cursor-wait")
+text.innerHTML = "Saving..."
+
 let name=document.getElementById("seqName").innerText.trim()
 let sequence=codons.join("")
 let mutations = mut.length===0
 ? "None"
-: mut.map(m=>`${m.from}${m.pos+1}${m.to}`).join(", ")
+: mut.map(m=>`${(m.fromAA||m.from)}${m.pos+1}${(m.toAA||m.to)}`).join(", ")
 
 await fetch("https://script.google.com/macros/s/AKfycbzPrB-EgpmEg_pqARZf3tG_zw0ObBeWU_0-DTauKhCT9Tscgws_MHgtXFbYdsLrf3NFAQ/exec",{
 method:"POST",
 mode:"no-cors",
-body: JSON.stringify({
-  name:name,
-  sequence:sequence,
-  mutations:mutations
-})
+body: JSON.stringify({name,sequence,mutations})
 })
 
-alert("Backup sent ✅")
+// ✅ finish
+text.innerHTML = "Saved ✓"
+btn.classList.remove("opacity-60","cursor-wait")
+
+setTimeout(()=>{
+  text.innerHTML = "Backup"
+},1500)
+
 }
 
 document.addEventListener("click",()=>{
