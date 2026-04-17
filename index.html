@@ -107,20 +107,43 @@ I
 <div class="mt-4">
 <div id="mutSummary" class="flex gap-2 flex-wrap"></div>
 
-<div id="outputDNA" class="w-full border p-3 mt-3 font-mono bg-white break-all rounded"></div>
+<div class="mt-5">
 
-<!-- EXPORT + BACKUP -->
-<div class="mt-4 flex gap-2 items-center">
+<!-- 🧬 Output Panel -->
+<div class="bg-white border rounded-xl shadow-sm p-4">
+
+<div class="flex justify-between items-center mb-2">
+
+<div class="text-sm font-semibold text-gray-600">
+Mutated Sequence
+</div>
+
+<div class="text-xs text-gray-400">
+Auto-generated
+</div>
+
+</div>
+
+<div id="outputDNA"
+class="font-mono text-sm bg-gray-50 border rounded-lg p-3 break-all leading-relaxed">
+</div>
+
+</div>
+
+<!-- ⚡ Action Bar -->
+<div class="mt-4 flex gap-3">
 
 <button onclick="exportWord()"
-class="bg-blue-600 text-white px-4 py-2 rounded">
-Export Word
+class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition">
+📄 Export
 </button>
 
-<button onclick="backupData()"
-class="bg-purple-600 text-white px-4 py-2 rounded">
-Backup
+<button id="backupBtn" onclick="backupData()"
+class="bg-purple-600 hover:bg-purple-700 text-white px-5 py-2.5 rounded-xl shadow-sm transition">
+☁️ Backup
 </button>
+
+</div>
 
 </div>
 
