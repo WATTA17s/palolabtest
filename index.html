@@ -89,19 +89,31 @@ class="w-full p-3 border rounded mb-3 text-center"
 placeholder="Protein (1-letter)">
 
 <!-- 🔥 MODE TOGGLE -->
-<div class="flex justify-center gap-2 mb-3">
+<div class="flex bg-gray-100 rounded-xl p-1 w-fit mx-auto mb-3">
 
 <div id="modeManual"
-class="tab active"
+class="org active"
 onclick="setMode('manual',this)">
 Manual
 </div>
 
 <div id="modeSliding"
-class="tab"
+class="org"
 onclick="setMode('sliding',this)">
 Sliding
 </div>
+
+</div>
+
+<div class="flex gap-2 mb-3 justify-center">
+
+<input id="win" value="5" class="w-16 border text-center">
+<input id="step" value="1" class="w-16 border text-center">
+
+<button onclick="handleGenerate()"
+class="bg-indigo-600 text-white px-3 rounded">
+Generate
+</button>
 
 </div>
 
@@ -313,18 +325,11 @@ for(let j=0;j<w;j++) arr[i+j]="_"
 library.push(arr.join(""))
 }
 
-// render
 document.getElementById("maskLib").innerHTML =
 library.map(x=>`
 <div class="flex justify-between items-center px-2 py-1 hover:bg-gray-100 rounded">
-
 <span>${x}</span>
-
-<button onclick="copyOne('${x}')"
-class="text-xs text-gray-400 hover:text-black">
-copy
-</button>
-
+<button onclick="copyOne('${x}')" class="text-xs text-gray-400 hover:text-black">copy</button>
 </div>
 `).join("")
 
@@ -345,17 +350,19 @@ library.push(arr.join(""))
 document.getElementById("maskLib").innerHTML =
 library.map(x=>`
 <div class="flex justify-between items-center px-2 py-1 hover:bg-gray-100 rounded">
-
 <span>${x}</span>
-
-<button onclick="copyOne('${x}')"
-class="text-xs text-gray-400 hover:text-black">
-copy
-</button>
-
+<button onclick="copyOne('${x}')" class="text-xs text-gray-400 hover:text-black">copy</button>
 </div>
 `).join("")
 
+}
+
+function handleGenerate(){
+if(maskMode==="manual"){
+generateManualMask()
+}else{
+generateMask()
+}
 }
 
 function handleCopy(){
@@ -388,9 +395,6 @@ document.querySelectorAll("#modeManual,#modeSliding")
 .forEach(x=>x.classList.remove("active"))
 
 el.classList.add("active")
-
-document.getElementById("slidingControls")
-.classList.toggle("hidden", mode !== "sliding")
 
 }
 
