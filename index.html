@@ -105,19 +105,28 @@ Sliding
 
 </div>
 
-<div class="flex items-center justify-between mb-3">
+<div class="flex items-center justify-center gap-3 mb-4">
 
-<!-- LEFT: controls -->
-<div class="flex gap-2 items-center">
-
+<!-- window -->
+<div class="flex flex-col items-center">
+<span class="text-xs text-gray-400 mb-1">Window</span>
 <input id="win" value="5"
-class="w-16 px-2 py-1 border rounded-lg text-center focus:ring-2 focus:ring-indigo-400 outline-none">
+class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
+focus:ring-2 focus:ring-indigo-400 outline-none">
+</div>
 
+<!-- step -->
+<div class="flex flex-col items-center">
+<span class="text-xs text-gray-400 mb-1">Step</span>
 <input id="step" value="1"
-class="w-16 px-2 py-1 border rounded-lg text-center focus:ring-2 focus:ring-indigo-400 outline-none">
+class="w-16 px-2 py-1.5 border rounded-lg text-center shadow-sm
+focus:ring-2 focus:ring-indigo-400 outline-none">
+</div>
 
+<!-- button -->
 <button onclick="handleGenerate()"
-class="bg-indigo-600 text-white px-4 py-1.5 rounded-lg hover:bg-indigo-700 transition shadow-sm">
+class="ml-2 bg-indigo-600 text-white px-5 py-2 rounded-xl
+hover:bg-indigo-700 active:scale-95 transition shadow-md font-medium">
 Generate
 </button>
 
