@@ -26,8 +26,9 @@ transition:0.15s;
 }
 .tab{padding:6px 12px;border-radius:8px;background:white;cursor:pointer}
 .tab.active{background:#4f46e5;color:white}
-.org{padding:4px 10px;border-radius:999px;border:1px solid #ddd;cursor:pointer}
-.org.active{background:#4f46e5;color:white}
+.org{
+transition:all 0.15s ease;
+}
 #dropdown{position:fixed;z-index:9999}
 </style>
 </head>
@@ -61,7 +62,11 @@ transition:0.15s;
 <!-- MUT -->
 <div id="mut" class="hidden">
 
-<div class="flex flex-wrap gap-2 mb-3" id="orgButtons"></div>
+<div class="mb-4">
+<div id="orgButtons"
+class="flex bg-gray-100 rounded-xl p-1 w-fit shadow-inner">
+</div>
+</div>
 
 <!-- 🔥 NAME FORMAT -->
 <div class="mb-4">
