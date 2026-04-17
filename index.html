@@ -88,9 +88,32 @@ font-weight:600;
 #dropdown{position:fixed;z-index:9999}
 </style>
 </head>
+ 
+ 
 
 <body class="bg-slate-100 p-6">
+  <!-- ✅ LOGIN -->
+  <div id="loginPage" class="min-h-screen flex items-center justify-center">
+    <div class="bg-white p-8 rounded-2xl shadow-md w-[320px]">
 
+      <div class="text-2xl font-semibold mb-4 text-center">🔐 Login</div>
+
+      <input id="user" placeholder="Username" class="w-full p-3 border rounded mb-3">
+      <input id="pass" type="password" placeholder="Password" class="w-full p-3 border rounded mb-4">
+
+      <button onclick="login()" class="w-full bg-indigo-600 text-white py-2 rounded-lg">
+        Enter Lab
+      </button>
+
+      <div id="err" class="text-red-500 text-sm mt-2 text-center hidden">
+        Wrong username or password
+      </div>
+
+    </div>
+
+
+   </div> <!-- ✅ APP (แยกออกมาเลย) -->
+  <div id="app" class="hidden">
 <div class="flex items-center justify-between mb-6">
 
   <!-- LEFT: LOGO -->
@@ -100,7 +123,7 @@ font-weight:600;
       <div class="text-2xl font-semibold tracking-tight">Pa1oLAB</div>
       <div class="text-xs text-gray-400 -mt-1">Protein Engineering Toolkit</div>
     </div>
-  </div>
+    </div>
 
   <!-- RIGHT: TAB -->
   <div class="flex bg-gray-100 p-1 rounded-xl shadow-inner">
@@ -118,7 +141,7 @@ font-weight:600;
   </div>
 
 </div>
-
+</div>
 
 <!-- MASK -->
 <!-- 🔥 MASK CARD -->
@@ -178,7 +201,7 @@ Copy All
 </div>
 
 </div>
-</div>
+
   
 <!-- MUT -->
 <div id="mut" class="hidden bg-white p-6 rounded shadow">
@@ -285,8 +308,8 @@ class="px-4 py-2 rounded-lg bg-black text-white hover:bg-gray-800 transition fle
 </div>
 </div>
 </div>
-
-
+</div>
+</div>
 
 <script>
 
@@ -776,7 +799,19 @@ setTimeout(()=>{
 document.addEventListener("click",()=>{
 document.getElementById("dropdown").classList.add("hidden")
 })
+function login(){
 
+  let u = document.getElementById("user").value
+  let p = document.getElementById("pass").value
+
+  if(u === "NH" && p === "101"){
+    document.getElementById("loginPage").style.display = "none"
+    document.getElementById("app").classList.remove("hidden")
+  }else{
+    document.getElementById("err").classList.remove("hidden")
+  }
+
+}
 </script>
 
 </body>
