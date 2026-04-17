@@ -118,26 +118,7 @@ Generate
 </div>
 
 <!-- 🔥 Sliding controls -->
-<div id="slidingControls"
-class="flex gap-2 mb-3 justify-center hidden">
 
-<input id="win" value="5" class="w-16 border text-center">
-<input id="step" value="1" class="w-16 border text-center">
-
-<button onclick="generateMask()"
-class="bg-indigo-600 text-white px-3 rounded">
-Generate
-</button>
-
-</div>
-
-<!-- 🔥 Copy -->
-<div class="flex justify-center mb-3">
-<button onclick="handleCopy()"
-class="bg-green-600 text-white px-4 py-1 rounded">
-Copy Library
-</button>
-</div>
 
 <div id="maskGrid" class="flex flex-wrap gap-3 justify-center"></div>
 
@@ -146,8 +127,21 @@ Copy Library
 class="mt-4 font-mono text-sm bg-gray-50 border rounded p-3 max-h-40 overflow-y-auto">
 </div>
 
-</div> <!-- 🔥 ปิด MASK ให้ถูก -->
+<!-- 🔥 ACTION BAR -->
+<div class="flex justify-between items-center mt-2">
 
+<button onclick="handleCopy()"
+class="text-sm px-3 py-1.5 bg-black text-white rounded-lg hover:bg-gray-800 transition">
+Copy All
+</button>
+
+<span id="copyToast"
+class="text-xs text-green-600 opacity-0 transition">
+Copied ✓
+</span>
+
+</div> <!-- 🔥 ปิด MASK ให้ถูก -->
+</div>
 <!-- MUT -->
 <div id="mut" class="hidden">
 
@@ -378,10 +372,35 @@ return
 
 navigator.clipboard.writeText(library.join("\n"))
 
+// 🔥 animation
+let toast = document.getElementById("copyToast")
+
+toast.classList.remove("opacity-0")
+toast.classList.add("opacity-100")
+
+setTimeout(()=>{
+toast.classList.remove("opacity-100")
+toast.classList.add("opacity-0")
+},1200)
+
 }
 
 function copyOne(seq){
+
 navigator.clipboard.writeText(seq)
+
+let toast = document.getElementById("copyToast")
+
+toast.innerText = "Copied 1 ✓"
+toast.classList.remove("opacity-0")
+toast.classList.add("opacity-100")
+
+setTimeout(()=>{
+toast.classList.remove("opacity-100")
+toast.classList.add("opacity-0")
+toast.innerText = "Copied ✓"
+},1000)
+
 }
   /* ================= MASK ================= */
 
