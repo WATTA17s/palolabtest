@@ -214,35 +214,57 @@ Copy All
   </div>
 
   <!-- 🔥 cutoff -->
- <div class="bg-gray-50 border rounded-xl px-4 py-3 shadow-sm">
+<!-- 🔥 cutoff compact -->
+<div class="bg-white border rounded-2xl px-4 py-3 shadow-sm w-[360px]">
 
-  <div class="flex justify-between items-center mb-2">
-    <span class="text-sm font-semibold text-gray-700">
+  <div class="flex justify-between items-center mb-3">
+    <span class="text-sm font-semibold text-slate-700">
       Rare Codon Sensitivity
     </span>
-    <span id="cutoffLabel" class="text-xs text-gray-400">
+
+    <span id="cutoffLabel"
+      class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
       Balanced
     </span>
   </div>
 
-  <!-- slider -->
   <input id="cutoffSlider"
     type="range"
     min="0.05" max="0.5" step="0.01" value="0.15"
     class="w-full accent-indigo-600">
 
-  <!-- value -->
-  <div class="flex justify-between items-center mt-2">
+  <div class="flex justify-between items-center mt-3 gap-2">
 
-    <span class="text-xs text-gray-400">Relaxed</span>
+    <button onclick="setCutoffPreset(0.05)"
+      class="cutoffPreset px-3 py-1 text-xs border rounded-lg hover:bg-indigo-50">
+      0.05
+    </button>
 
-    <input id="cutoff"
-      value="0.15"
-      class="w-16 text-center border rounded px-2 py-1 text-sm">
+    <button onclick="setCutoffPreset(0.10)"
+      class="cutoffPreset px-3 py-1 text-xs border rounded-lg bg-indigo-50 text-indigo-600 border-indigo-400 font-semibold">
+      0.10
+    </button>
 
-    <span class="text-xs text-gray-400">Strict</span>
+    <button onclick="setCutoffPreset(0.15)"
+      class="cutoffPreset px-3 py-1 text-xs border rounded-lg hover:bg-indigo-50">
+      0.15
+    </button>
+
+    <button onclick="setCutoffPreset(0.25)"
+      class="cutoffPreset px-3 py-1 text-xs border rounded-lg hover:bg-indigo-50">
+      0.25
+    </button>
+
+    <button onclick="setCutoffPreset(0.50)"
+      class="cutoffPreset px-3 py-1 text-xs border rounded-lg hover:bg-indigo-50">
+      0.50
+    </button>
 
   </div>
+
+  <input id="cutoff" value="0.15" class="hidden">
+
+</div>
 
 </div>
 
@@ -973,7 +995,29 @@ function updateCutoffUI(val){
 
   render()
 }
+function setCutoffPreset(val){
+  updateCutoffUI(val)
 
+  document.querySelectorAll(".cutoffPreset").forEach(btn=>{
+    btn.classList.remove(
+      "bg-indigo-50",
+      "text-indigo-600",
+      "border-indigo-400",
+      "font-semibold"
+    )
+  })
+
+  document.querySelectorAll(".cutoffPreset").forEach(btn=>{
+    if(parseFloat(btn.innerText) === val){
+      btn.classList.add(
+        "bg-indigo-50",
+        "text-indigo-600",
+        "border-indigo-400",
+        "font-semibold"
+      )
+    }
+  })
+}
 cutoffSlider.oninput = e => {
   updateCutoffUI(parseFloat(e.target.value))
 }
