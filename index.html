@@ -284,7 +284,25 @@ I
 </div>
 
 <textarea id="dnaInput" class="w-full p-3 border rounded mb-3" placeholder="DNA sequence"></textarea>
+<div class="bg-indigo-50 border rounded-xl p-4 mb-4">
+  <div class="flex justify-between items-center mb-2">
+    <div class="text-sm font-semibold text-gray-700">
+      Target Seq Preview
+    </div>
+    <div class="text-xs text-gray-400">
+      DNA codon or amino acid sequence
+    </div>
+  </div>
 
+  <textarea id="targetSeqInput"
+    class="w-full p-3 border rounded mb-3 font-mono text-sm"
+    placeholder="Optional: paste target DNA codon sequence or amino acid sequence"></textarea>
+
+  <div id="targetPreview"
+    class="font-mono text-sm bg-white border rounded-lg p-3 min-h-[48px]">
+    No target sequence
+  </div>
+</div>
 <div id="viewer" class="flex flex-wrap gap-3"></div>
 
 <div id="dropdown" class="hidden bg-white border rounded shadow p-3 text-sm max-h-80 overflow-y-auto"></div>
@@ -602,7 +620,91 @@ originalCodons[i/3] = c
 
 render()
 }
+  document.getElementById("targetSeqInput").oninput = () => {
+  renderTargetPreview()
+}
 
+  function translateInputToAA(seq){
+
+  seq = seq.toUpperCase().replace(/[^A-Z]/g,"")
+
+  if(/^[ATGC]+$/.test(seq) && seq.length % 3 === 0){
+
+    let aaSeq = ""
+
+    for(let i = 0; i < seq.length; i += 3){
+      let codon = seq.slice(i, i + 3)
+      aaSeq += CODON_TO_AA[codon] || "X"
+    }
+
+    return aaSeq
+  }
+
+  return seq.replace(/[^ARNDCQEGHILKMFPSTWYVX]/g,"")
+}
+
+function renderTargetPreview(){
+
+  let box = document.getElementById("targetPreview")
+  let input = document.getElementById("targetSeqInput").value.trim()
+
+  if(!input){
+    box.innerHTML = "No target sequence"
+    return
+  }
+
+  if(orig.length === 0){
+    box.innerHTML = `<span class="text-red-500">Please input reference DNA sequence first</span>`
+    return
+  }
+
+  let refAA = orig.join("")
+  let targetAA = translateInputToAA(input)
+
+  if(refAA.length !== targetAA.length){
+    box.innerHTML = `
+      <div class="text-red-500">
+        Length mismatch<br>
+        Ref AA length: ${refAA.length}<br>
+        Target AA length: ${targetAA.length}
+      </div>
+    `
+    return
+  }
+
+  let muts = []
+  let visual = ""
+
+  for(let i = 0; i < refAA.length; i++){
+
+    let r = refAA[i]
+    let t = targetAA[i]
+
+    if(r !== t){
+      muts.push(`${r}${i+1}${t}`)
+      visual += `<span class="bg-yellow-300 px-1 rounded">${t}</span>`
+    }else{
+      visual += t
+    }
+  }
+
+  box.innerHTML = `
+    <div class="mb-2">
+      <span class="font-semibold">Target AA:</span>
+      <span class="break-all">${visual}</span>
+    </div>
+
+    <div>
+      <span class="font-semibold">Preview Mutations:</span>
+      ${
+        muts.length
+        ? muts.map(x => `<span class="inline-block bg-yellow-100 border rounded-full px-2 py-0.5 mr-1 mb-1">${x}</span>`).join("")
+        : `<span class="text-gray-500">No mutation</span>`
+      }
+    </div>
+  `
+}
+  
 function render(){
 let viewer=document.getElementById("viewer")
 viewer.innerHTML=""
@@ -680,6 +782,8 @@ dnaHTML+=mut.some(m=>m.pos===i)
 : c
 })
 document.getElementById("outputDNA").innerHTML=dnaHTML
+
+renderTargetPreview()
 }
 
 /* dropdown */
