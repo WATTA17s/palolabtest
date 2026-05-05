@@ -838,7 +838,7 @@ if(idx === 0){
 // 🔴 rare
 let cutoff = parseFloat(document.getElementById("cutoff").value) || 0.15
 
-if(idx === sorted.length-1 && val < cutoff){
+if(val < cutoff){
   row.classList.add("bg-red-100")
 }
 
